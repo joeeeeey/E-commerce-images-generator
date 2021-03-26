@@ -1,0 +1,2 @@
+create_meituan_xls:
+	node batch_create_product.js

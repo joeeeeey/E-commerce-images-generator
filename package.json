@@ -9,6 +9,8 @@
   "author": "Joey",
   "license": "ISC",
   "dependencies": {
+    "convert-excel-to-json": "^1.7.0",
+    "json2xls": "^0.1.2",
     "request": "^2.88.2",
     "shelljs": "^0.8.3"
   }

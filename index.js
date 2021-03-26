@@ -5,21 +5,19 @@ const request = require('request');
 const fs = require('fs');
 const shell = require('shelljs');
 
-const rootFolderPrefixPath = '/Users/joeeey/Downloads/E-commerce'
+const rootFolderPrefixPath = '/Users/joeeey/Downloads/E-commerce';
+
 
 const dirs = [
-  'GN-405D-公牛三插位无开关无线插座接线板拖线板',
-  'GN-413K-公牛三插位无线插座接线板拖线板',
-  'GN-A01-公牛一插位无开关无线插座接线板拖线板',
-  'GN-A02-公牛二插位无开关无线插座接线板拖线板',
-  'GN-A03-公牛三插位无开关无线插座接线板拖线板',
-  'GN-C5-公牛四插位无开关无线插座接线板拖线板',
-].map(x => `${rootFolderPrefixPath}/${x}`);
+  '厨房用水龙头',
+  '洗衣机用水龙头',
+  '生料带'
+].map((x) => `${rootFolderPrefixPath}/${x}`);
 
 const outPutDir = 'output';
-const sourceDir = 'source'
+const sourceDir = 'source';
 const taobaoDir = 'tb';
-const meiduanElemaDir = '美团饿了么'
+const meiduanElemaDir = '美团饿了么';
 // output/11
 const squareRatioOutputDir = '11';
 // // output/white-bg
@@ -34,25 +32,25 @@ const createDirs = async () => {
     }
 
     // 创建第一层目录
-    const oneLevelDirs = [outPutDir, sourceDir, taobaoDir, meiduanElemaDir]
-    oneLevelDirs.forEach(async oneLevelDir => {
+    const oneLevelDirs = [outPutDir, sourceDir, taobaoDir, meiduanElemaDir];
+    oneLevelDirs.forEach(async (oneLevelDir) => {
       if (!fs.existsSync(`${dir}/${oneLevelDir}`)) {
         await fs.mkdirSync(`${dir}/${oneLevelDir}`);
       }
-    })
-    
-    // 创建 output 下的目录
-    const outputDirFullPath = `${dir}/${outPutDir}`
-    const outputSecondDirs = [squareRatioOutputDir, whiteBgOutputDir]
-    outputSecondDirs.forEach(async outputSecondDir => {
-      if (!fs.existsSync(`${outputDirFullPath}/${outputSecondDir}`)) {
-        await fs.mkdirSync(`${outputDirFullPath}/${outputSecondDir}`)
-      }
-    })
-  }
-}
+    });
 
-const doJob = async (isFromTB=false) => {
+    // 创建 output 下的目录
+    const outputDirFullPath = `${dir}/${outPutDir}`;
+    const outputSecondDirs = [squareRatioOutputDir, whiteBgOutputDir];
+    outputSecondDirs.forEach(async (outputSecondDir) => {
+      if (!fs.existsSync(`${outputDirFullPath}/${outputSecondDir}`)) {
+        await fs.mkdirSync(`${outputDirFullPath}/${outputSecondDir}`);
+      }
+    });
+  }
+};
+
+const doJob = async (isFromTB = false) => {
   // 根据文件路径得出文件名称，后缀
   // 注意 . 只能出现一次
   const getFileInfoByPath = (path) => {
@@ -66,8 +64,13 @@ const doJob = async (isFromTB=false) => {
   };
 
   // 调用 API 去除背景
-  // TODO 试试淘宝的抠图 api
-  function callRemoveBgAPI(localFilePath, whiteBgFileSavePath, squareFileSavePath) {
+  // TODO 试试淘宝的抠图 , https://luban.aliyun.com/web/gen-next/entry
+  // 目前不支持 api
+  function callRemoveBgAPI(
+    localFilePath,
+    whiteBgFileSavePath,
+    squareFileSavePath
+  ) {
     return new Promise(function (resolve, reject) {
       const { fileName, fileSuffix } = getFileInfoByPath(localFilePath);
       request.post(
@@ -114,9 +117,11 @@ const doJob = async (isFromTB=false) => {
     const dir = dirs[i];
 
     // 如果 source 文件下存在 image 文件， 则开始操作，否则跳过
-    const sourceDirFullPath = `${dir}/${sourceDir}`
-    const outPutDirFullName = `${dir}/${outPutDir}`
-    const filesInSource = (await shell.exec(`ls ${sourceDirFullPath}`).stdout).split('\n').filter((x) => !!x);
+    const sourceDirFullPath = `${dir}/${sourceDir}`;
+    const outPutDirFullName = `${dir}/${outPutDir}`;
+    const filesInSource = (await shell.exec(`ls ${sourceDirFullPath}`).stdout)
+      .split('\n')
+      .filter((x) => !!x);
     if (filesInSource.length === 0) {
       continue;
     }
@@ -124,24 +129,50 @@ const doJob = async (isFromTB=false) => {
     // isFromTB 为 true, 则直接将 source 中的图片拷贝到 output/11
     if (isFromTB) {
       // 尺寸太小的话用 sips 扩展到(根据当前比例)最大边为 1000
-      filesInSource.forEach(async fileInSource => {
-        const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`
-        const fileKBSize = (await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)).stdout
+      filesInSource.forEach(async (fileInSource) => {
+        const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
+        const fileKBSize = (
+          await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)
+        ).stdout;
         console.log('fileKBSize: ', fileKBSize);
         if (parseFloat(fileKBSize) < 100) {
           console.log('图片小于 100k, 扩大之');
-          await shell.exec(`sips -Z 1000 ${filesInSource}`)
+          await shell.exec(`sips -Z 1000 ${fileInSourceFullPath}`);
         }
-      })
+      });
       // const sourceDir = `${dir}/${outPutDir}/${squareRatioOutputDir}`
-      await shell.exec(`cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${squareRatioOutputDir}`)
+      await shell.exec(
+        `cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${squareRatioOutputDir}`
+      );
       continue;
     }
 
+    filesInSource.forEach(async (fileInSource) => {
+      const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
+      const fileKBSize = parseFloat(
+        (await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)).stdout
+      );
+      console.log('fileKBSize: ', fileKBSize);
+      if (fileKBSize > 5 * 1024) {
+        console.log('图片大于 5*1024k');
+        const compressRate = 1 - (fileKBSize - 5 * 1024 + 300) / (5 * 1024);
+        await shell.exec(
+          `convert ${fileInSourceFullPath} -resize ${
+            compressRate * 100
+          }% ${fileInSourceFullPath}`
+        );
+      }
+    });
+    //  如果图片大于 5m，把图片压缩下让其小于 5m
+    // convert /Users/joeeey/Downloads/IMG_2377.jpg  -resize 80% /Users/joeeey/Downloads/IMG_2377.jpg
 
-    const filesInSquareRatioOutputDir = (await shell.exec(`ls ${outputDir}/${squareRatioOutputDir}`).stdout).split('\n').filter((x) => !!x);
+    const filesInSquareRatioOutputDir = (
+      await shell.exec(`ls ${outPutDirFullName}/${squareRatioOutputDir}`).stdout
+    )
+      .split('\n')
+      .filter((x) => !!x);
     console.log('filesInSquareRatioOutputDir: ', filesInSquareRatioOutputDir);
-    
+
     for (let j = 0; j < filesInSource.length; j++) {
       const sourceFile = filesInSource[j];
       const sourceFileName = getFileInfoByPath(sourceFile).fileName;
@@ -151,33 +182,36 @@ const doJob = async (isFromTB=false) => {
       }
 
       // 开始 remove bg
-      const toBeRemoveFilePath = `${sourceDirFullPath}/${sourceFile}`
+      const toBeRemoveFilePath = `${sourceDirFullPath}/${sourceFile}`;
       console.log('toBeRemoveFilePath: ', toBeRemoveFilePath);
       const whiteBgFileSavePath = `${outPutDirFullName}/${whiteBgOutputDir}`;
       const squareFileSavePath = `${outPutDirFullName}/${squareRatioOutputDir}`;
-      // await callRemoveBgAPI(toBeRemoveFilePath, whiteBgFileSavePath, squareFileSavePath);
-
+      await callRemoveBgAPI(
+        toBeRemoveFilePath,
+        whiteBgFileSavePath,
+        squareFileSavePath
+      );
     }
   }
 };
 
 const extractAllSuqareImages = async () => {
-  const tmpDir = '/tmp/allImages'
-  await shell.exec(`rm -rf ${tmpDir}`)
-  await shell.exec(`mkdir -p ${tmpDir}`)
+  const tmpDir = '/tmp/allImages';
+  await shell.exec(`rm -rf ${tmpDir}`);
+  await shell.exec(`mkdir -p ${tmpDir}`);
   for (let i = 0; i < dirs.length; i++) {
     const dir = dirs[i];
-    const sourceDirFullPath = `${dir}/${outPutDir}/${squareRatioOutputDir}`
-    await shell.exec(`cp -r ${sourceDirFullPath}/* ${tmpDir}/`)
+    const sourceDirFullPath = `${dir}/${outPutDir}/${squareRatioOutputDir}`;
+    await shell.exec(`cp -r ${sourceDirFullPath}/* ${tmpDir}/`);
   }
-  await shell.exec(`open ${tmpDir}`)
-}
+  await shell.exec(`open ${tmpDir}`);
+};
 
 const main = async () => {
-  await createDirs()
-  const isFromTB = true;
+  await createDirs();
+  const isFromTB = false;
   await doJob(isFromTB);
-  // await extractAllSuqareImages();
+  await extractAllSuqareImages();
 };
 
 main();
