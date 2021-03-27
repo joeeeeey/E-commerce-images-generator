@@ -9,9 +9,9 @@ const rootFolderPrefixPath = '/Users/joeeey/Downloads/E-commerce';
 
 
 const dirs = [
-  '厨房用水龙头',
-  '洗衣机用水龙头',
-  '生料带'
+  '不锈钢插销',
+  '1.5平方护套线',
+  '空调出水管',
 ].map((x) => `${rootFolderPrefixPath}/${x}`);
 
 const outPutDir = 'output';
