@@ -5,15 +5,20 @@ const request = require('request');
 const fs = require('fs');
 const shell = require('shelljs');
 
-const rootFolderPrefixPath = '/Users/joeeey/Downloads/E-commerce';
+const rootFolder = '/Users/joeeey/Downloads';
+const productsFolder = `${rootFolder}/E-commerce`;
 
 
 const dirs = [
-  '棕毛清洁刷烧烤刷油漆刷胶水刷加厚加长',
-  '木工凿特钢凿刀木凿铲木',
-  'T型套筒扳手多功能丁字形外六角扳手',
-  '三叉套筒扳手Y型扳手',
-].map((x) => `${rootFolderPrefixPath}/${x}`);
+  '小铲子绿色花铲园艺工具挖土神器',
+  '小钉耙花铲园艺工具',
+  '小锄头种花种菜多用小花锄',
+  '小锄头锻打加厚宽3cm长32cm',
+  '小锄头胶柄宽5cm长43cm',
+  '小洋镐尖头镐园艺工具',
+  '小洋镐扁头镐园艺工具',
+  '小锄头铁柄双头锄',
+].map((x) => `${productsFolder}/${x}`);
 
 const outPutDir = 'output';
 const sourceDir = 'source';
@@ -50,6 +55,25 @@ const createDirs = async () => {
     });
   }
 };
+
+// 将本来不在对应文件夹的图片拷贝到对应目录的 source 中
+// 图片的名称需要带有目录名
+const cpOriginFilesIntoSource = async () => {
+  // rootFolder
+  const originFiles = (await shell.exec(`ls ${rootFolder}`).stdout)
+  .split('\n')
+  .filter((x) => !!x);
+
+  for (let i = 0; i < dirs.length; i++) {
+    const dir = dirs[i];
+    const dirName = dir.split('/').pop();
+    targetFiles = originFiles.filter(file => file.includes(dirName))
+    console.log('targetFiles: ', targetFiles);
+    await targetFiles.forEach(async targetFile => {
+      await shell.exec(`cp ${rootFolder}/${targetFile} ${dir}/${sourceDir}`)
+    })
+  }
+}
 
 const doJob = async (isFromTB = false, isNoBgFile = false) => {
   // 根据文件路径得出文件名称，后缀
@@ -130,7 +154,7 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
     // isFromTB 为 true, 则直接将 source 中的图片拷贝到 output/11
     if (isFromTB) {
       // 尺寸太小的话用 sips 扩展到(根据当前比例)最大边为 1000
-      filesInSource.forEach(async (fileInSource) => {
+      await filesInSource.forEach(async (fileInSource) => {
         const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
         const fileKBSize = (
           await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)
@@ -244,7 +268,7 @@ const extractAllSuqareImages = async () => {
 const main = async () => {
   const { isNoBgFile, isFromTB } = process.env
   await createDirs();
-  // const isFromTB = false;
+  await cpOriginFilesIntoSource()
   await doJob(!!isFromTB, !!isNoBgFile);
   await extractAllSuqareImages();
 };
