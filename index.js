@@ -9,9 +9,10 @@ const rootFolderPrefixPath = '/Users/joeeey/Downloads/E-commerce';
 
 
 const dirs = [
-  '不锈钢插销',
-  '1.5平方护套线',
-  '空调出水管',
+  '棕毛清洁刷烧烤刷油漆刷胶水刷加厚加长',
+  '木工凿特钢凿刀木凿铲木',
+  'T型套筒扳手多功能丁字形外六角扳手',
+  '三叉套筒扳手Y型扳手',
 ].map((x) => `${rootFolderPrefixPath}/${x}`);
 
 const outPutDir = 'output';
@@ -50,7 +51,7 @@ const createDirs = async () => {
   }
 };
 
-const doJob = async (isFromTB = false) => {
+const doJob = async (isFromTB = false, isNoBgFile = false) => {
   // 根据文件路径得出文件名称，后缀
   // 注意 . 只能出现一次
   const getFileInfoByPath = (path) => {
@@ -147,6 +148,30 @@ const doJob = async (isFromTB = false) => {
       continue;
     }
 
+    // 本来就是白底图 将图片从 source 拷贝到 no-bg 放大成 1:1 放到 square 中
+    if (isNoBgFile) {
+      // const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
+      await shell.exec(
+        `cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${whiteBgOutputDir}`
+      );
+
+      const filesInNoBg = (await shell.exec(`ls ${outPutDirFullName}/${whiteBgOutputDir}`).stdout)
+      .split('\n')
+      .filter((x) => !!x);
+      filesInNoBg.forEach(async (fileInNoBg) => {
+        const fileInWhiteBgOutputFullPath = `${outPutDirFullName}/${whiteBgOutputDir}/${fileInNoBg}`;
+        const squareFileSavePath = `${outPutDirFullName}/${squareRatioOutputDir}`;
+        const NEW_SQUARE_FILE_NAME = `${squareFileSavePath}/${fileInNoBg}`;
+        // 生成 1:1 的图片
+        await shell.exec(
+          `FILE_PATH=${fileInWhiteBgOutputFullPath} NEW_SQUARE_FILE_NAME=${NEW_SQUARE_FILE_NAME} ./convert2_1_1_one_file.sh`
+        );
+  
+      });
+
+      continue;
+    }
+
     filesInSource.forEach(async (fileInSource) => {
       const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
       const fileKBSize = parseFloat(
@@ -168,6 +193,11 @@ const doJob = async (isFromTB = false) => {
 
     const filesInSquareRatioOutputDir = (
       await shell.exec(`ls ${outPutDirFullName}/${squareRatioOutputDir}`).stdout
+    ).split('\n')
+    .filter((x) => !!x);
+
+    const filesInNoBgOutputDir = (
+      await shell.exec(`ls ${outPutDirFullName}/${whiteBgOutputDir}`).stdout
     )
       .split('\n')
       .filter((x) => !!x);
@@ -176,16 +206,20 @@ const doJob = async (isFromTB = false) => {
     for (let j = 0; j < filesInSource.length; j++) {
       const sourceFile = filesInSource[j];
       const sourceFileName = getFileInfoByPath(sourceFile).fileName;
-      // 已经被 remove bg 处理过
-      if (filesInSquareRatioOutputDir.some((x) => x.includes(sourceFileName))) {
+      // 在 no-bg 存在 但不在正方形存在，需要变成正方形
+      const fileInNobg = filesInNoBgOutputDir.some((x) => x.includes(sourceFileName))
+      const isFileInSquare = filesInSquareRatioOutputDir.some((x) => x.includes(sourceFileName))
+      const whiteBgFileSavePath = `${outPutDirFullName}/${whiteBgOutputDir}`;
+      const squareFileSavePath = `${outPutDirFullName}/${squareRatioOutputDir}`;
+
+      // 在正方形中存在已经被 remove bg 处理过
+      if (fileInNobg && isFileInSquare) {
         continue;
       }
 
       // 开始 remove bg
       const toBeRemoveFilePath = `${sourceDirFullPath}/${sourceFile}`;
-      console.log('toBeRemoveFilePath: ', toBeRemoveFilePath);
-      const whiteBgFileSavePath = `${outPutDirFullName}/${whiteBgOutputDir}`;
-      const squareFileSavePath = `${outPutDirFullName}/${squareRatioOutputDir}`;
+      // console.log('toBeRemoveFilePath: ', toBeRemoveFilePath);
       await callRemoveBgAPI(
         toBeRemoveFilePath,
         whiteBgFileSavePath,
@@ -208,9 +242,10 @@ const extractAllSuqareImages = async () => {
 };
 
 const main = async () => {
+  const { isNoBgFile, isFromTB } = process.env
   await createDirs();
-  const isFromTB = false;
-  await doJob(isFromTB);
+  // const isFromTB = false;
+  await doJob(!!isFromTB, !!isNoBgFile);
   await extractAllSuqareImages();
 };
 
