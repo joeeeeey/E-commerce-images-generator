@@ -27,9 +27,10 @@ const pickObjByKeys = (obj, keys, ingoreNull = true) => {
 const getAllProductData = async () => {
   let data = [];
 
-  const files = (await shell.exec(`ls ../products/`).stdout)
-    .split('\n')
-    .filter((x) => !!x);
+  const files = ['new.json']
+  // const files = (await shell.exec(`ls ../products/`).stdout)
+  //   .split('\n')
+  //   .filter((x) => !!x);
 
   await files.forEach(async (file) => {
     if (file.includes('json')) {

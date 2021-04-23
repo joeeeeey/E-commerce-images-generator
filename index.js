@@ -10,14 +10,8 @@ const productsFolder = `${rootFolder}/E-commerce`;
 
 
 const dirs = [
-  '小铲子绿色花铲园艺工具挖土神器',
-  '小钉耙花铲园艺工具',
-  '小锄头种花种菜多用小花锄',
-  '小锄头锻打加厚宽3cm长32cm',
-  '小锄头胶柄宽5cm长43cm',
-  '小洋镐尖头镐园艺工具',
-  '小洋镐扁头镐园艺工具',
-  '小锄头铁柄双头锄',
+  '十字螺丝刀',
+  '扎带4x150mm',
 ].map((x) => `${productsFolder}/${x}`);
 
 const outPutDir = 'output';

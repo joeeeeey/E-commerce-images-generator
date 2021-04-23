@@ -1,3 +1,6 @@
+# API_KEYS
+# d8EixPRE1hhobPptBHKse3aZ WwXJNXnEFmotVYjGPntqc2r1 QLAP2FtKMnMu43XBAFeyb4o7
+
 start:
 	API_KEY=WwXJNXnEFmotVYjGPntqc2r1 node index.js
 	# API_KEY=QLAP2FtKMnMu43XBAFeyb4o7 node index.js
