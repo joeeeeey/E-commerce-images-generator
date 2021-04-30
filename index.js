@@ -10,8 +10,7 @@ const productsFolder = `${rootFolder}/E-commerce`;
 
 
 const dirs = [
-  '十字螺丝刀',
-  '扎带4x150mm',
+  '铁链链条链子',
 ].map((x) => `${productsFolder}/${x}`);
 
 const outPutDir = 'output';
