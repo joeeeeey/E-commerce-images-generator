@@ -10,7 +10,13 @@ const productsFolder = `${rootFolder}/E-commerce`;
 
 
 const dirs = [
-  '铁链链条链子',
+  '透明雨伞',
+  '万能通用格力空调遥控器',
+  '雷达蚊香檀香型',
+  '东成FF03-100A角磨机',
+  '东成FF02-110切割机',
+  '搬家打包袋缤纷三角',
+  '搬家打包袋藏青火箭',
 ].map((x) => `${productsFolder}/${x}`);
 
 const outPutDir = 'output';

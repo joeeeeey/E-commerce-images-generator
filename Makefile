@@ -13,3 +13,6 @@ resize_taobao_image:
 
 create_meituan_xls:
 	make -C meituan create_meituan_xls
+
+create_eleme_xls:
+	make -C eleme create_ele_xls
