@@ -8,7 +8,6 @@ const shell = require('shelljs');
 const rootFolder = '/Users/joeeey/Downloads';
 const productsFolder = `${rootFolder}/E-commerce`;
 
-
 const dirs = [
   // '止水阀三角阀不锈钢',
   '东成充电式起子电钻电动螺丝刀电转钻',
@@ -66,19 +65,19 @@ const createDirs = async () => {
 const cpOriginFilesIntoSource = async () => {
   // rootFolder
   const originFiles = (await shell.exec(`ls ${rootFolder}`).stdout)
-  .split('\n')
-  .filter((x) => !!x);
+    .split('\n')
+    .filter((x) => !!x);
 
   for (let i = 0; i < dirs.length; i++) {
     const dir = dirs[i];
     const dirName = dir.split('/').pop();
-    targetFiles = originFiles.filter(file => file.includes(dirName))
+    targetFiles = originFiles.filter((file) => file.includes(dirName));
     console.log('targetFiles: ', targetFiles);
-    await targetFiles.forEach(async targetFile => {
-      await shell.exec(`cp ${rootFolder}/${targetFile} ${dir}/${sourceDir}`)
-    })
+    await targetFiles.forEach(async (targetFile) => {
+      await shell.exec(`cp ${rootFolder}/${targetFile} ${dir}/${sourceDir}`);
+    });
   }
-}
+};
 
 const doJob = async (isFromTB = false, isNoBgFile = false) => {
   // 根据文件路径得出文件名称，后缀
@@ -159,8 +158,27 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
     // isFromTB 为 true, 则直接将 source 中的图片拷贝到 output/11
     if (isFromTB) {
       // 尺寸太小的话用 sips 扩展到(根据当前比例)最大边为 1000
-      await filesInSource.forEach(async (fileInSource) => {
+      for (let j = 0; j < filesInSource.length; j++) {
+        const fileInSource = filesInSource[j];
         const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
+
+        const imageDimmesion = (
+          await shell.exec(`identify -format '%w %h' ${fileInSourceFullPath}`)
+        ).stdout;
+        console.log('imageDimmesion: ', imageDimmesion.split(' '));
+        let [imageWidth, imageHeight] = imageDimmesion;
+        // TODO 如果不是 1:1 直接留白
+        if (imageWidth !== imageHeight) {
+          await shell.exec(
+            `convert ${fileInSourceFullPath} -resize 800x800 -gravity center -background white -extent 800x800 ${fileInSourceFullPath}`
+          );
+        }
+
+        const newImageDimmesion = (
+          await shell.exec(`identify -format '%w %h' ${fileInSourceFullPath}`)
+        ).stdout;
+        console.log('newImageDimmesion: ', newImageDimmesion.split(' '));
+
         const fileKBSize = (
           await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)
         ).stdout;
@@ -170,12 +188,15 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
           await shell.exec(`sips -Z 1000 ${fileInSourceFullPath}`);
         }
 
-        if (parseFloat(fileKBSize) > 1024) {
-          console.log('图片大于 1024k, 扩缩之');
-          await shell.exec(`sips -Z 1000 ${fileInSourceFullPath} --setProperty format jpeg`);
+        if (parseFloat(fileKBSize) > 600) {
+          console.log('图片大于 600k, 缩之');
+          console.log('先出现啊啊啊')
+          await shell.exec(
+            `sips -Z 1000 ${fileInSourceFullPath} --setProperty format jpeg`
+          );
         }
-      });
-      // const sourceDir = `${dir}/${outPutDir}/${squareRatioOutputDir}`
+      }
+
       await shell.exec(
         `cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${squareRatioOutputDir}`
       );
@@ -189,9 +210,11 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
         `cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${whiteBgOutputDir}`
       );
 
-      const filesInNoBg = (await shell.exec(`ls ${outPutDirFullName}/${whiteBgOutputDir}`).stdout)
-      .split('\n')
-      .filter((x) => !!x);
+      const filesInNoBg = (
+        await shell.exec(`ls ${outPutDirFullName}/${whiteBgOutputDir}`).stdout
+      )
+        .split('\n')
+        .filter((x) => !!x);
       filesInNoBg.forEach(async (fileInNoBg) => {
         const fileInWhiteBgOutputFullPath = `${outPutDirFullName}/${whiteBgOutputDir}/${fileInNoBg}`;
         const squareFileSavePath = `${outPutDirFullName}/${squareRatioOutputDir}`;
@@ -200,7 +223,6 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
         await shell.exec(
           `FILE_PATH=${fileInWhiteBgOutputFullPath} NEW_SQUARE_FILE_NAME=${NEW_SQUARE_FILE_NAME} ./convert2_1_1_one_file.sh`
         );
-  
       });
 
       continue;
@@ -227,8 +249,9 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
 
     const filesInSquareRatioOutputDir = (
       await shell.exec(`ls ${outPutDirFullName}/${squareRatioOutputDir}`).stdout
-    ).split('\n')
-    .filter((x) => !!x);
+    )
+      .split('\n')
+      .filter((x) => !!x);
 
     const filesInNoBgOutputDir = (
       await shell.exec(`ls ${outPutDirFullName}/${whiteBgOutputDir}`).stdout
@@ -241,8 +264,12 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
       const sourceFile = filesInSource[j];
       const sourceFileName = getFileInfoByPath(sourceFile).fileName;
       // 在 no-bg 存在 但不在正方形存在，需要变成正方形
-      const fileInNobg = filesInNoBgOutputDir.some((x) => x.includes(sourceFileName))
-      const isFileInSquare = filesInSquareRatioOutputDir.some((x) => x.includes(sourceFileName))
+      const fileInNobg = filesInNoBgOutputDir.some((x) =>
+        x.includes(sourceFileName)
+      );
+      const isFileInSquare = filesInSquareRatioOutputDir.some((x) =>
+        x.includes(sourceFileName)
+      );
       const whiteBgFileSavePath = `${outPutDirFullName}/${whiteBgOutputDir}`;
       const squareFileSavePath = `${outPutDirFullName}/${squareRatioOutputDir}`;
 
@@ -264,50 +291,55 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
 };
 
 const genMeituanFormatedImage = async (tmpDir) => {
-  const files = (await shell.ls(tmpDir)).stdout.split('\n').filter(x => !!x)
+  const files = (await shell.ls(tmpDir)).stdout.split('\n').filter((x) => !!x);
   console.log('files: ', files);
 
   const picIndexPattern = /\-ec\d+\./i;
   // const fileName = '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A-ec2.jpg'
   for (let i = 0; i < files.length; i++) {
     const fileName = files[i];
-    const matchedValue = fileName.match( picIndexPattern )
+    const matchedValue = fileName.match(picIndexPattern);
     if (matchedValue) {
-      picIndex = matchedValue[0] // e.g.  '-ec2.' | '-ec10.'
-      const indexValue = parseInt(picIndex.match(/\d+/i)) // 以 1 开始
-      const meituanFileName = `ZS${indexValue-1}-${fileName.replace(picIndex, '.')}`
-      await shell.exec(`cp -r ${tmpDir}/${fileName} ${tmpDir}/${meituanFileName}`);
+      picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
+      const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
+      const meituanFileName = `ZS${indexValue - 1}-${fileName.replace(
+        picIndex,
+        '.'
+      )}`;
+      await shell.exec(
+        `cp -r ${tmpDir}/${fileName} ${tmpDir}/${meituanFileName}`
+      );
     }
   }
-}
+};
 
 const genEleFormatedImage = async (tmpDir) => {
-  const files = (await shell.ls(tmpDir)).stdout.split('\n').filter(x => !!x)
+  const files = (await shell.ls(tmpDir)).stdout.split('\n').filter((x) => !!x);
   console.log('files: ', files);
 
   const picIndexPattern = /\-ec\d+\./i;
   // const fileName = '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A-ec2.jpg'
   for (let i = 0; i < files.length; i++) {
     const fileName = files[i];
-    const matchedValue = fileName.match( picIndexPattern )
+    const matchedValue = fileName.match(picIndexPattern);
     if (matchedValue) {
-      picIndex = matchedValue[0] // e.g.  '-ec2.' | '-ec10.'
-      const indexValue = parseInt(picIndex.match(/\d+/i)) // 以 1 开始
+      picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
+      const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
       console.log('indexValue: ', indexValue);
-      const eleMeFileName = fileName.replace(picIndex, '.').replace('-', '_').replace('.', `-${indexValue}.`)
+      const eleMeFileName = fileName
+        .replace(picIndex, '.')
+        .replace('-', '_')
+        .replace('.', `-${indexValue}.`);
       console.log('eleMeFileName: ', eleMeFileName);
-      await shell.exec(`cp -r ${tmpDir}/${fileName} ${tmpDir}/${eleMeFileName}`);
+      await shell.exec(
+        `cp -r ${tmpDir}/${fileName} ${tmpDir}/${eleMeFileName}`
+      );
     }
   }
-}
+};
 
 const extractAllSuqareImages = async () => {
   const tmpDir = '/tmp/allImages';
-
-  await genMeituanFormatedImage(tmpDir)
-  await genEleFormatedImage(tmpDir)
-
-  return
 
   await shell.exec(`rm -rf ${tmpDir}`);
   await shell.exec(`mkdir -p ${tmpDir}`);
@@ -323,17 +355,19 @@ const extractAllSuqareImages = async () => {
   // 美团:
   //   - 以 'ZS0-' 开头来区分多图
   //   - 移除结尾处 -{number}
-  
+
   // 美图文件名
+  await genMeituanFormatedImage(tmpDir);
+  await genEleFormatedImage(tmpDir);
 
   await shell.exec(`open ${tmpDir}`);
 };
 
 const main = async () => {
-  // const { isNoBgFile, isFromTB } = process.env
-  // await createDirs();
-  // await cpOriginFilesIntoSource()
-  // await doJob(!!isFromTB, !!isNoBgFile);
+  const { isNoBgFile, isFromTB } = process.env;
+  await createDirs();
+  await cpOriginFilesIntoSource();
+  await doJob(!!isFromTB, !!isNoBgFile);
   await extractAllSuqareImages();
 };
 

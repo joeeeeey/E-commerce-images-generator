@@ -44,7 +44,7 @@ const getAllProductData = async () => {
   data.forEach((x) => {
     x['商品类目id'] = categoryIDMapping[x['美团类别']];
     x['售卖状态'] = !!x['售卖状态'] ? '1' : '0'
-    x['商品标题*'] = x['商品标题*'].replace(/\_/g, '/')
+    x['商品标题*'] = x['商品标题*']
   });
 
   return data;
