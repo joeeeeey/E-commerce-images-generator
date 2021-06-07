@@ -10,13 +10,19 @@ const productsFolder = `${rootFolder}/E-commerce`;
 
 
 const dirs = [
-  '透明雨伞',
-  '万能通用格力空调遥控器',
-  '雷达蚊香檀香型',
-  '东成FF03-100A角磨机',
-  '东成FF02-110切割机',
-  '搬家打包袋缤纷三角',
-  '搬家打包袋藏青火箭',
+  // '止水阀三角阀不锈钢',
+  '东成充电式起子电钻电动螺丝刀电转钻',
+  '东成无刷电动扳手充电式无刷冲击扳手',
+  '东成石材切割机Z1E-FF-110',
+  '东成石材切割机Z1E-FF02-110',
+  '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A',
+  '东成圆电据手提木工台锯M1Y-FF-185',
+  '东成电锤混凝土打孔钻墙Z1C-FF-26',
+  '东成电锤电镐多功能Z1C-FF03-26',
+  '东成型材切割机钢材大功率切割机J1G-FF02-355',
+  '手提打磨砂轮切割机角向磨光机FF05-100B',
+  '手提打磨砂轮切割机角向磨光机FF09-100',
+  '冲击电锤钻头方柄',
 ].map((x) => `${productsFolder}/${x}`);
 
 const outPutDir = 'output';
@@ -163,6 +169,11 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
           console.log('图片小于 100k, 扩大之');
           await shell.exec(`sips -Z 1000 ${fileInSourceFullPath}`);
         }
+
+        if (parseFloat(fileKBSize) > 1024) {
+          console.log('图片大于 1024k, 扩缩之');
+          await shell.exec(`sips -Z 1000 ${fileInSourceFullPath} --setProperty format jpeg`);
+        }
       });
       // const sourceDir = `${dir}/${outPutDir}/${squareRatioOutputDir}`
       await shell.exec(
@@ -252,8 +263,52 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
   }
 };
 
+const genMeituanFormatedImage = async (tmpDir) => {
+  const files = (await shell.ls(tmpDir)).stdout.split('\n').filter(x => !!x)
+  console.log('files: ', files);
+
+  const picIndexPattern = /\-ec\d+\./i;
+  // const fileName = '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A-ec2.jpg'
+  for (let i = 0; i < files.length; i++) {
+    const fileName = files[i];
+    const matchedValue = fileName.match( picIndexPattern )
+    if (matchedValue) {
+      picIndex = matchedValue[0] // e.g.  '-ec2.' | '-ec10.'
+      const indexValue = parseInt(picIndex.match(/\d+/i)) // 以 1 开始
+      const meituanFileName = `ZS${indexValue-1}-${fileName.replace(picIndex, '.')}`
+      await shell.exec(`cp -r ${tmpDir}/${fileName} ${tmpDir}/${meituanFileName}`);
+    }
+  }
+}
+
+const genEleFormatedImage = async (tmpDir) => {
+  const files = (await shell.ls(tmpDir)).stdout.split('\n').filter(x => !!x)
+  console.log('files: ', files);
+
+  const picIndexPattern = /\-ec\d+\./i;
+  // const fileName = '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A-ec2.jpg'
+  for (let i = 0; i < files.length; i++) {
+    const fileName = files[i];
+    const matchedValue = fileName.match( picIndexPattern )
+    if (matchedValue) {
+      picIndex = matchedValue[0] // e.g.  '-ec2.' | '-ec10.'
+      const indexValue = parseInt(picIndex.match(/\d+/i)) // 以 1 开始
+      console.log('indexValue: ', indexValue);
+      const eleMeFileName = fileName.replace(picIndex, '.').replace('-', '_').replace('.', `-${indexValue}.`)
+      console.log('eleMeFileName: ', eleMeFileName);
+      await shell.exec(`cp -r ${tmpDir}/${fileName} ${tmpDir}/${eleMeFileName}`);
+    }
+  }
+}
+
 const extractAllSuqareImages = async () => {
   const tmpDir = '/tmp/allImages';
+
+  await genMeituanFormatedImage(tmpDir)
+  await genEleFormatedImage(tmpDir)
+
+  return
+
   await shell.exec(`rm -rf ${tmpDir}`);
   await shell.exec(`mkdir -p ${tmpDir}`);
   for (let i = 0; i < dirs.length; i++) {
@@ -261,14 +316,24 @@ const extractAllSuqareImages = async () => {
     const sourceDirFullPath = `${dir}/${outPutDir}/${squareRatioOutputDir}`;
     await shell.exec(`cp -r ${sourceDirFullPath}/* ${tmpDir}/`);
   }
+
+  // TODO 新增文件名， 美团饿了么的批量更新图片对文件名有不同对要求
+  // 饿了么:
+  //   - 除了结尾的 {number}. 之前， 其他地方不能出现 '-', 得换成 _
+  // 美团:
+  //   - 以 'ZS0-' 开头来区分多图
+  //   - 移除结尾处 -{number}
+  
+  // 美图文件名
+
   await shell.exec(`open ${tmpDir}`);
 };
 
 const main = async () => {
-  const { isNoBgFile, isFromTB } = process.env
-  await createDirs();
-  await cpOriginFilesIntoSource()
-  await doJob(!!isFromTB, !!isNoBgFile);
+  // const { isNoBgFile, isFromTB } = process.env
+  // await createDirs();
+  // await cpOriginFilesIntoSource()
+  // await doJob(!!isFromTB, !!isNoBgFile);
   await extractAllSuqareImages();
 };
 

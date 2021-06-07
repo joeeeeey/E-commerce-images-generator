@@ -28,7 +28,7 @@ const getAllProductData = async () => {
   let data = [];
 
   // const files = ['new.json']
-  const files = ['main.json', '厨房卫浴.json', '园艺工具.json', '日用品.json']
+  const files = ['new.json']
 
   await files.forEach(async (file) => {
     if (file.includes('json')) {
@@ -42,8 +42,8 @@ const getAllProductData = async () => {
 
   // mapping 过去
   data.forEach((x) => {
-    x['商品名称'] = x['商品标题*']
-    x['商品三级类目'] = '其他家装/五金工具' // 写死？
+    x['商品名称'] = x['商品标题*'].split('_')[0].replace(/\-/g, '_') // '-' 为饿了么图片保留符号
+    x['商品三级类目'] = x['饿了么类别']
     x['重量'] = x['重量*']
     x['售价'] = x['价格（元）*']
     x['库存'] = x['库存*']
