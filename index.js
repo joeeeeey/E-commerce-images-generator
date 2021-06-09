@@ -4,25 +4,28 @@
 const request = require('request');
 const fs = require('fs');
 const shell = require('shelljs');
+const imageMapping = require('./products/imageMapping');
 
 const rootFolder = '/Users/joeeey/Downloads';
 const productsFolder = `${rootFolder}/E-commerce`;
 
-const dirs = [
+const newProducts = [
   // '止水阀三角阀不锈钢',
-  '东成充电式起子电钻电动螺丝刀电转钻',
-  '东成无刷电动扳手充电式无刷冲击扳手',
-  '东成石材切割机Z1E-FF-110',
-  '东成石材切割机Z1E-FF02-110',
-  '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A',
-  '东成圆电据手提木工台锯M1Y-FF-185',
-  '东成电锤混凝土打孔钻墙Z1C-FF-26',
-  '东成电锤电镐多功能Z1C-FF03-26',
-  '东成型材切割机钢材大功率切割机J1G-FF02-355',
-  '手提打磨砂轮切割机角向磨光机FF05-100B',
-  '手提打磨砂轮切割机角向磨光机FF09-100',
-  '冲击电锤钻头方柄',
-].map((x) => `${productsFolder}/${x}`);
+  // '东成充电式起子电钻电动螺丝刀电转钻',
+  // '东成无刷电动扳手充电式无刷冲击扳手',
+  // '东成石材切割机Z1E-FF-110',
+  // '东成石材切割机Z1E-FF02-110',
+  // '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A',
+  // '东成圆电据手提木工台锯M1Y-FF-185',
+  // '东成电锤混凝土打孔钻墙Z1C-FF-26',
+  // '东成电锤电镐多功能Z1C-FF03-26',
+  // '东成型材切割机钢材大功率切割机J1G-FF02-355',
+  // '手提打磨砂轮切割机角向磨光机FF05-100B',
+  // '手提打磨砂轮切割机角向磨光机FF09-100',
+  '冲击电锤钻头_根',
+]
+
+const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
 
 const outPutDir = 'output';
 const sourceDir = 'source';
@@ -35,22 +38,22 @@ const whiteBgOutputDir = 'white-bg';
 
 // 将 ['output', 'source', 'tb', '美团饿了么'] 目录创建
 const createDirs = async () => {
-  for (let i = 0; i < dirs.length; i++) {
-    const dir = dirs[i];
-    if (!fs.existsSync(dir)) {
-      await fs.mkdirSync(dir);
+  for (let i = 0; i < newProductsDir.length; i++) {
+    const newProductDir = newProductsDir[i];
+    if (!fs.existsSync(newProductDir)) {
+      await fs.mkdirSync(newProductDir);
     }
 
     // 创建第一层目录
     const oneLevelDirs = [outPutDir, sourceDir, taobaoDir, meiduanElemaDir];
     oneLevelDirs.forEach(async (oneLevelDir) => {
-      if (!fs.existsSync(`${dir}/${oneLevelDir}`)) {
-        await fs.mkdirSync(`${dir}/${oneLevelDir}`);
+      if (!fs.existsSync(`${newProductDir}/${oneLevelDir}`)) {
+        await fs.mkdirSync(`${newProductDir}/${oneLevelDir}`);
       }
     });
 
     // 创建 output 下的目录
-    const outputDirFullPath = `${dir}/${outPutDir}`;
+    const outputDirFullPath = `${newProductDir}/${outPutDir}`;
     const outputSecondDirs = [squareRatioOutputDir, whiteBgOutputDir];
     outputSecondDirs.forEach(async (outputSecondDir) => {
       if (!fs.existsSync(`${outputDirFullPath}/${outputSecondDir}`)) {
@@ -68,13 +71,15 @@ const cpOriginFilesIntoSource = async () => {
     .split('\n')
     .filter((x) => !!x);
 
-  for (let i = 0; i < dirs.length; i++) {
-    const dir = dirs[i];
-    const dirName = dir.split('/').pop();
+  for (let i = 0; i < newProductsDir.length; i++) {
+    const newProductDir = newProductsDir[i];
+    const dirName = newProductDir.split('/').pop();
     targetFiles = originFiles.filter((file) => file.includes(dirName));
     console.log('targetFiles: ', targetFiles);
     await targetFiles.forEach(async (targetFile) => {
-      await shell.exec(`cp ${rootFolder}/${targetFile} ${dir}/${sourceDir}`);
+      await shell.exec(
+        `cp ${rootFolder}/${targetFile} ${newProductDir}/${sourceDir}`
+      );
     });
   }
 };
@@ -130,7 +135,7 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
           const newFileFullPath = `${whiteBgFileSavePath}/${fileName}-no-bg.${fileSuffix}`;
           await fs.writeFileSync(newFileFullPath, body);
 
-          const NEW_SQUARE_FILE_NAME = `${squareFileSavePath}/${fileName}-square.${fileSuffix}`;
+          const NEW_SQUARE_FILE_NAME = `${squareFileSavePath}/${fileName}.${fileSuffix}`;
           // 生成 1000*1000 的图片
           await shell.exec(
             `FILE_PATH=${newFileFullPath} NEW_SQUARE_FILE_NAME=${NEW_SQUARE_FILE_NAME} ./convert2_1_1_one_file.sh`
@@ -142,12 +147,12 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
     });
   }
 
-  for (let i = 0; i < dirs.length; i++) {
-    const dir = dirs[i];
+  for (let i = 0; i < newProductsDir.length; i++) {
+    const newProductDir = newProductsDir[i];
 
     // 如果 source 文件下存在 image 文件， 则开始操作，否则跳过
-    const sourceDirFullPath = `${dir}/${sourceDir}`;
-    const outPutDirFullName = `${dir}/${outPutDir}`;
+    const sourceDirFullPath = `${newProductDir}/${sourceDir}`;
+    const outPutDirFullName = `${newProductDir}/${outPutDir}`;
     const filesInSource = (await shell.exec(`ls ${sourceDirFullPath}`).stdout)
       .split('\n')
       .filter((x) => !!x);
@@ -190,7 +195,7 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
 
         if (parseFloat(fileKBSize) > 600) {
           console.log('图片大于 600k, 缩之');
-          console.log('先出现啊啊啊')
+          console.log('先出现啊啊啊');
           await shell.exec(
             `sips -Z 1000 ${fileInSourceFullPath} --setProperty format jpeg`
           );
@@ -294,6 +299,7 @@ const genMeituanFormatedImage = async (tmpDir) => {
   const files = (await shell.ls(tmpDir)).stdout.split('\n').filter((x) => !!x);
   console.log('files: ', files);
 
+  await shell.exec(`mkdir -p ${tmpDir}/美团`);
   const picIndexPattern = /\-ec\d+\./i;
   // const fileName = '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A-ec2.jpg'
   for (let i = 0; i < files.length; i++) {
@@ -307,8 +313,10 @@ const genMeituanFormatedImage = async (tmpDir) => {
         '.'
       )}`;
       await shell.exec(
-        `cp -r ${tmpDir}/${fileName} ${tmpDir}/${meituanFileName}`
+        `cp ${tmpDir}/${fileName} ${tmpDir}/美团/${meituanFileName}`
       );
+    } else {
+      await shell.exec(`cp ${tmpDir}/${fileName} ${tmpDir}/美团/${fileName}`);
     }
   }
 };
@@ -316,7 +324,8 @@ const genMeituanFormatedImage = async (tmpDir) => {
 const genEleFormatedImage = async (tmpDir) => {
   const files = (await shell.ls(tmpDir)).stdout.split('\n').filter((x) => !!x);
   console.log('files: ', files);
-
+  // TODO fix meituan 文件夹  warning
+  await shell.exec(`mkdir -p ${tmpDir}/饿了么`);
   const picIndexPattern = /\-ec\d+\./i;
   // const fileName = '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A-ec2.jpg'
   for (let i = 0; i < files.length; i++) {
@@ -325,38 +334,87 @@ const genEleFormatedImage = async (tmpDir) => {
     if (matchedValue) {
       picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
       const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
-      console.log('indexValue: ', indexValue);
       const eleMeFileName = fileName
         .replace(picIndex, '.')
         .replace('-', '_')
         .replace('.', `-${indexValue}.`);
-      console.log('eleMeFileName: ', eleMeFileName);
       await shell.exec(
-        `cp -r ${tmpDir}/${fileName} ${tmpDir}/${eleMeFileName}`
+        `cp ${tmpDir}/${fileName} ${tmpDir}/饿了么/${eleMeFileName}`
       );
+    } else {
+      await shell.exec(`cp ${tmpDir}/${fileName} ${tmpDir}/饿了么/${fileName}`);
     }
   }
 };
+
+const genSameImageWithDiffName = async (tmpDir) => {
+  console.log('genSameImageWithDiffName: ');
+  const filesInTmp = (await shell.ls(tmpDir)).stdout
+    .split('\n')
+    .filter((x) => !!x);
+  for (let i = 0; i < newProducts.length; i++) {
+    const newProduct = newProducts[i];
+    console.log('newProducts: ', newProduct);
+    const mappingFileNames = imageMapping[newProduct];
+    console.log('mappingFileNames: ', mappingFileNames);
+    if (!mappingFileNames) continue;
+    const newProductFileNames = filesInTmp.filter((x) =>
+      x.includes(newProduct)
+    ); // [asd-ec1.png asd.jpg]
+    // console.log('newProductFileNames: ', newProductFileNames);
+
+    for (let k = 0; k < newProductFileNames.length; k++) {
+      const newProductFileName = newProductFileNames[k];
+
+      for (let j = 0; j < mappingFileNames.length; j++) {
+        const mappingFileName = mappingFileNames[j];
+        // const regex = new RegExp(newProductFileName, 'i')
+        const formatedName = newProductFileName.replace(newProduct, mappingFileName)
+        console.log('formatedName: ', formatedName);
+        await shell.exec(`cp ${tmpDir}/${newProductFileName} ${tmpDir}/${formatedName}`);
+      }
+    }
+  }
+};
+
+const compressOutput = async (tmpDir) => {
+  const filesInTmp = (await shell.ls(tmpDir)).stdout
+    .split('\n')
+    .filter((x) => !!x);
+
+  for (let i = 0; i < filesInTmp.length; i++) {
+    const fileInTmp = filesInTmp[i];
+    const fileKBSize = (
+      await shell.exec(`du -k ${tmpDir}/${fileInTmp} |cut -f1`)
+    ).stdout;
+  
+    if (parseFloat(fileKBSize) > 600) {
+      console.log('压缩最终图');
+      await shell.exec(
+        `sips -Z 600 ${tmpDir}/${fileInTmp} --setProperty format jpeg`
+      );
+    }
+  }
+}
 
 const extractAllSuqareImages = async () => {
   const tmpDir = '/tmp/allImages';
 
   await shell.exec(`rm -rf ${tmpDir}`);
   await shell.exec(`mkdir -p ${tmpDir}`);
-  for (let i = 0; i < dirs.length; i++) {
-    const dir = dirs[i];
-    const sourceDirFullPath = `${dir}/${outPutDir}/${squareRatioOutputDir}`;
+  for (let i = 0; i < newProductsDir.length; i++) {
+    const newProductDir = newProductsDir[i];
+    const sourceDirFullPath = `${newProductDir}/${outPutDir}/${squareRatioOutputDir}`;
     await shell.exec(`cp -r ${sourceDirFullPath}/* ${tmpDir}/`);
   }
 
-  // TODO 新增文件名， 美团饿了么的批量更新图片对文件名有不同对要求
-  // 饿了么:
-  //   - 除了结尾的 {number}. 之前， 其他地方不能出现 '-', 得换成 _
-  // 美团:
-  //   - 以 'ZS0-' 开头来区分多图
-  //   - 移除结尾处 -{number}
+  // 压缩下图片
+  await compressOutput(tmpDir);
 
-  // 美图文件名
+  // 根据 mapping 关系生成不同命名的相同图片
+  await genSameImageWithDiffName(tmpDir);
+
+  // 生成美团和饿了么格式的文件名
   await genMeituanFormatedImage(tmpDir);
   await genEleFormatedImage(tmpDir);
 
