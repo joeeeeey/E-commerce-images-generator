@@ -10,19 +10,8 @@ const rootFolder = '/Users/joeeey/Downloads';
 const productsFolder = `${rootFolder}/E-commerce`;
 
 const newProducts = [
-  // '止水阀三角阀不锈钢',
-  // '东成充电式起子电钻电动螺丝刀电转钻',
-  // '东成无刷电动扳手充电式无刷冲击扳手',
-  // '东成石材切割机Z1E-FF-110',
-  // '东成石材切割机Z1E-FF02-110',
-  // '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A',
-  // '东成圆电据手提木工台锯M1Y-FF-185',
-  // '东成电锤混凝土打孔钻墙Z1C-FF-26',
-  // '东成电锤电镐多功能Z1C-FF03-26',
-  // '东成型材切割机钢材大功率切割机J1G-FF02-355',
-  // '手提打磨砂轮切割机角向磨光机FF05-100B',
-  // '手提打磨砂轮切割机角向磨光机FF09-100',
-  '冲击电锤钻头_根',
+  "银象自吸泵水循环GP-125_台",
+  "银象自吸泵水循环GP-280_台",
 ]
 
 const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
@@ -79,6 +68,9 @@ const cpOriginFilesIntoSource = async () => {
     await targetFiles.forEach(async (targetFile) => {
       await shell.exec(
         `cp ${rootFolder}/${targetFile} ${newProductDir}/${sourceDir}`
+      );
+      await shell.exec(
+        `cp ${rootFolder}/${targetFile} ${productsFolder}/origin_source`
       );
     });
   }
@@ -388,7 +380,7 @@ const compressOutput = async (tmpDir) => {
       await shell.exec(`du -k ${tmpDir}/${fileInTmp} |cut -f1`)
     ).stdout;
   
-    if (parseFloat(fileKBSize) > 600) {
+    if (parseFloat(fileKBSize) > 300) {
       console.log('压缩最终图');
       await shell.exec(
         `sips -Z 600 ${tmpDir}/${fileInTmp} --setProperty format jpeg`
