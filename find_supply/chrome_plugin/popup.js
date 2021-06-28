@@ -1,6 +1,6 @@
 // Initialize button with user's preferred color
 let donwloadSourceBtn = document.getElementById('donwloadSourceBtn');
-let gotoMainPicListPageBtn = document.getElementById('gotoMainPicListPageBtn');
+let goto1688MainPicListPageBtn = document.getElementById('goto1688MainPicListPageBtn');
 
 // chrome.storage.sync.get("color", ({ color }) => {
 //   donwloadSourceBtn.style.backgroundColor = color;
@@ -26,6 +26,11 @@ const handleDownloadResource = () => {
   // chrome.storage.sync.get("color", ({ color }) => {
   //   document.body.style.backgroundColor = color;
   // });
+  if (window.location.origin.includes('taobao')) {
+    // document.querySelector('.tm-detail-meta').querySelector('.tb-thumb-warp').querySelectorAll('img')
+    // '.mainwrap' '#description' '.content ke-post'
+    // 'tm-video-box'  'lib-video' 'source' 'src'
+  }
 
   if (window.location.origin.includes('1688')) {
     let productName = prompt("What's your product name?");
@@ -33,6 +38,14 @@ const handleDownloadResource = () => {
     console.log('productName: ', productName);
     if (!productName) {
       return;
+    }
+
+    let productCategory = null;
+    const splitValues = productName.split(' ')
+    if (splitValues.length > 1) {
+
+      productCategory = splitValues[0]
+      productName = splitValues[1]
     }
     if (window.location.pathname.includes('/pic')) {
       const containers = document
@@ -42,7 +55,7 @@ const handleDownloadResource = () => {
         const container = containers[i];
         forceDownload(
           container.querySelector('img').src,
-          `1688-main-pic-${productName}-ec${i}.jpg`
+          `{p-1688}{type-main}{c-${productCategory}}{n-${productName}}end-ec${i}.jpg`
         );
       }
     }
@@ -56,7 +69,7 @@ const handleDownloadResource = () => {
           .querySelector('source').src;
         forceDownload(
           videoUrl.replace('http://', 'https://'),
-          `1688-des-video-${productName}-ec.mp4`
+          `{p-1688}{type-description}{c-${productCategory}}{n-${productName}}end.mp4`
         );
       }
 
@@ -80,9 +93,9 @@ const handleDownloadResource = () => {
         }
       }
 
-      imgEles.forEach((ele, index) => {
+      imgEles.forEach((ele, i) => {
         console.log('ele.src: ', ele.src);
-        forceDownload(ele.src, `1688-des-img-${productName}-ec${index}.jpg`);
+        forceDownload(ele.src, `{p-1688}{type-description}{c-${productCategory}}{n-${productName}}end-ec${i}.jpg`);
       });
     }
   }
@@ -116,7 +129,7 @@ donwloadSourceBtn.addEventListener('click', async () => {
   });
 });
 
-gotoMainPicListPageBtn.addEventListener('click', async () => {
+goto1688MainPicListPageBtn.addEventListener('click', async () => {
   let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   chrome.scripting.executeScript({
     target: { tabId: tab.id },

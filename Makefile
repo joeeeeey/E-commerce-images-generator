@@ -16,3 +16,6 @@ create_meituan_xls:
 
 create_eleme_xls:
 	make -C eleme create_ele_xls
+
+open_website:
+	node ./find_supply/index.js

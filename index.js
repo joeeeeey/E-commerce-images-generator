@@ -9,19 +9,29 @@ const imageMapping = require('./products/imageMapping');
 const rootFolder = '/Users/joeeey/Downloads';
 const productsFolder = `${rootFolder}/E-commerce`;
 
-const newProducts = [
-  "银象自吸泵水循环GP-125_台",
-  "银象自吸泵水循环GP-280_台",
-]
+const newProducts = ['不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂'];
 
 const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
 
+/**
+ * 文件路径
+ * ├── output
+ * │   ├── 11 // 为 1:1 图片
+ * │   │   ├── xxxxx_个-ec1.jpeg
+ * │   └── white-bg // 为白底图
+ * │   └── main // 为主图，和 1:1 图应该一样
+ * │   └── description // 为描述图
+ * ├── source // 存在源文件，包含 image video
+ * │   ├── xxxxx_个-ec1.jpeg
+ */
 const outPutDir = 'output';
 const sourceDir = 'source';
 const taobaoDir = 'tb';
 const meiduanElemaDir = '美团饿了么';
 // output/11
 const squareRatioOutputDir = '11';
+const mainOutputDir = 'main';
+const descriptionOutputDir = 'description';
 // // output/white-bg
 const whiteBgOutputDir = 'white-bg';
 
@@ -43,7 +53,12 @@ const createDirs = async () => {
 
     // 创建 output 下的目录
     const outputDirFullPath = `${newProductDir}/${outPutDir}`;
-    const outputSecondDirs = [squareRatioOutputDir, whiteBgOutputDir];
+    const outputSecondDirs = [
+      squareRatioOutputDir,
+      whiteBgOutputDir,
+      mainOutputDir,
+      descriptionOutputDir,
+    ];
     outputSecondDirs.forEach(async (outputSecondDir) => {
       if (!fs.existsSync(`${outputDirFullPath}/${outputSecondDir}`)) {
         await fs.mkdirSync(`${outputDirFullPath}/${outputSecondDir}`);
@@ -52,10 +67,51 @@ const createDirs = async () => {
   }
 };
 
-// 将本来不在对应文件夹的图片拷贝到对应目录的 source 中
-// 图片的名称需要带有目录名
+const getFromBetween = {
+  results: [],
+  string: '',
+  getFromBetween: function (sub1, sub2) {
+    if (this.string.indexOf(sub1) < 0 || this.string.indexOf(sub2) < 0)
+      return false;
+    const SP = this.string.indexOf(sub1) + sub1.length;
+    const string1 = this.string.substr(0, SP);
+    const string2 = this.string.substr(SP);
+    const TP = string1.length + string2.indexOf(sub2);
+    return this.string.substring(SP, TP);
+  },
+  removeFromBetween: function (sub1, sub2) {
+    if (this.string.indexOf(sub1) < 0 || this.string.indexOf(sub2) < 0)
+      return false;
+    const removal = sub1 + this.getFromBetween(sub1, sub2) + sub2;
+    this.string = this.string.replace(removal, '');
+  },
+  getAllResults: function (sub1, sub2) {
+    // first check to see if we do have both substrings
+    if (this.string.indexOf(sub1) < 0 || this.string.indexOf(sub2) < 0) return;
+
+    // find one result
+    const result = this.getFromBetween(sub1, sub2);
+    // push it to the results array
+    this.results.push(result);
+    // remove the most recently found one from the string
+    this.removeFromBetween(sub1, sub2);
+
+    // if there's more substrings
+    if (this.string.indexOf(sub1) > -1 && this.string.indexOf(sub2) > -1) {
+      this.getAllResults(sub1, sub2);
+    } else return;
+  },
+  get: function (string, sub1, sub2) {
+    this.results = [];
+    this.string = string;
+    this.getAllResults(sub1, sub2);
+    return this.results;
+  },
+};
+
+// 1. 将本来不在对应文件夹的图片拷贝到对应目录的 source 中(E-commerce/{product}/source)，图片的名称需要带有目录名
+// 2. 将原始图拷贝到 E-commerce/origin_source 目录
 const cpOriginFilesIntoSource = async () => {
-  // rootFolder
   const originFiles = (await shell.exec(`ls ${rootFolder}`).stdout)
     .split('\n')
     .filter((x) => !!x);
@@ -76,19 +132,52 @@ const cpOriginFilesIntoSource = async () => {
   }
 };
 
-const doJob = async (isFromTB = false, isNoBgFile = false) => {
-  // 根据文件路径得出文件名称，后缀
-  // 注意 . 只能出现一次
-  const getFileInfoByPath = (path) => {
-    const fileFullname = path.split('/').pop();
-    const [fileName, fileSuffix] = fileFullname.split('.');
-    return {
-      fileName,
-      fileSuffix,
-      fileFullname,
-    };
+// 根据文件路径得出文件名称，后缀
+// 注意 . 只能出现一次
+const getFileInfoByPath = (path) => {
+  const fileFullname = path.split('/').pop();
+  const [fileName, fileSuffix] = fileFullname.split('.');
+  return {
+    fileName,
+    fileSuffix,
+    fileFullname,
   };
+};
 
+const ECommercialPlatforms = ['1688', 'tabobao', 'tianmao', 'jd', 'pdd'];
+// 解析文件资源名称
+/**
+ *
+ * @param {*} fileName
+ * Format:
+ *  - 来自电商: {p-1688}{t-main}{c-宠物用品}{n-不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂}end-ec0.jpg
+ *  - 来自自拍: {c-宠物}{n-不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂}end-ec0.jpg
+ * @return {p: 'xx', c: 'xx', n: 'xxx', realSourceName: '不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂-ec0.jpg'}
+ */
+const parseSourceFileName = (fileName) => {
+  const imgSuffix = ['jpg', 'png', 'jpeg'];
+  const videoSuffix = ['mp4'];
+  const dataMapping = {}; // {p: 'xx', c: 'xx', n: 'xxx'}
+
+  // console.log('getFromBetween: ', getFromBetween);
+  getFromBetween.get(fileName, '{', '}').forEach((x) => {
+    console.log('x: ', x);
+    dataMapping[x.split('-')[0]] = x.split('-').slice(1, 9999)[0];
+  });
+
+  const realSourceName = `${dataMapping.n}${fileName.split('}end')[1]}`;
+
+  const { fileSuffix } = getFileInfoByPath(realSourceName);
+  if (imgSuffix.includes(fileSuffix)) {
+    dataMapping.fileType = 'image';
+  } else if (videoSuffix.includes(fileSuffix)) {
+    dataMapping.fileType = 'video';
+  }
+  dataMapping.realSourceName = realSourceName;
+  return dataMapping;
+};
+
+const doJob = async (isFromTB = false, isNoBgFile = false) => {
   // 调用 API 去除背景
   // TODO 试试淘宝的抠图 , https://luban.aliyun.com/web/gen-next/entry
   // 目前不支持 api
@@ -152,29 +241,46 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
       continue;
     }
 
-    // isFromTB 为 true, 则直接将 source 中的图片拷贝到 output/11
-    if (isFromTB) {
-      // 尺寸太小的话用 sips 扩展到(根据当前比例)最大边为 1000
-      for (let j = 0; j < filesInSource.length; j++) {
-        const fileInSource = filesInSource[j];
-        const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
+    // TODO isFromTB 从图片名称计算出来
 
+    // 尺寸太小的话用 sips 扩展到(根据当前比例)最大边为 1000
+    for (let j = 0; j < filesInSource.length; j++) {
+      const fileInSource = filesInSource[j];
+
+      const fileInfo = parseSourceFileName(fileInSource);
+      // {fileType: 'image',p: 'xx', t: 'main', c: 'category', n: 'xxx', realSourceName: '不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂-ec0.jpg'}
+      console.log('fileInfo: ', fileInfo);
+      //  TODO do we need video operation
+      if (fileInfo.fileType === 'video') {
+        continue;
+      }
+
+      const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
+      // 存在 platform, 说明是从电商平台获得的资源
+      if (fileInfo.p) {
         const imageDimmesion = (
           await shell.exec(`identify -format '%w %h' ${fileInSourceFullPath}`)
         ).stdout;
-        console.log('imageDimmesion: ', imageDimmesion.split(' '));
-        let [imageWidth, imageHeight] = imageDimmesion;
-        // TODO 如果不是 1:1 直接留白
-        if (imageWidth !== imageHeight) {
-          await shell.exec(
-            `convert ${fileInSourceFullPath} -resize 800x800 -gravity center -background white -extent 800x800 ${fileInSourceFullPath}`
-          );
-        }
 
-        const newImageDimmesion = (
-          await shell.exec(`identify -format '%w %h' ${fileInSourceFullPath}`)
-        ).stdout;
-        console.log('newImageDimmesion: ', newImageDimmesion.split(' '));
+        if (fileInfo.t === 'main') {
+          const [imageWidth, imageHeight] = imageDimmesion;
+          // 主图如果不是 1:1 直接四周留白
+          if (imageWidth !== imageHeight) {
+            await shell.exec(
+              `convert ${fileInSourceFullPath} -resize 800x800 -gravity center -background white -extent 800x800 ${fileInSourceFullPath}`
+            );
+
+            const newImageDimmesion = (
+              await shell.exec(
+                `identify -format '%w %h' ${fileInSourceFullPath}`
+              )
+            ).stdout;
+            console.log(
+              '留白图片 Dimmesion is: ',
+              newImageDimmesion.split(' ')
+            );
+          }
+        }
 
         const fileKBSize = (
           await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)
@@ -187,18 +293,31 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
 
         if (parseFloat(fileKBSize) > 600) {
           console.log('图片大于 600k, 缩之');
-          console.log('先出现啊啊啊');
           await shell.exec(
             `sips -Z 1000 ${fileInSourceFullPath} --setProperty format jpeg`
           );
         }
-      }
 
-      await shell.exec(
-        `cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${squareRatioOutputDir}`
-      );
-      continue;
+        // 拷贝调整后的图片放入 output 中
+        // 文件名使用不带有 {} 的
+        if (fileInfo.t === 'main') {
+          console.log('main: herere', fileInSourceFullPath, );
+          console.log('main22222: ', `${outPutDirFullName}/${squareRatioOutputDir}/${fileInfo.realSourceName}`)
+          await shell.exec(
+            `cp ${fileInSourceFullPath} ${outPutDirFullName}/${mainOutputDir}/${fileInfo.realSourceName}`
+          );
+        } else if (fileInfo.t === 'description') {
+          await shell.exec(
+            `cp ${fileInSourceFullPath} ${outPutDirFullName}/${descriptionOutputDir}/${fileInfo.realSourceName}`
+          );
+        }
+      }
     }
+
+    // await shell.exec(
+    //   `cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${squareRatioOutputDir}`
+    // );
+    continue;
 
     // 本来就是白底图 将图片从 source 拷贝到 no-bg 放大成 1:1 放到 square 中
     if (isNoBgFile) {
@@ -361,9 +480,14 @@ const genSameImageWithDiffName = async (tmpDir) => {
       for (let j = 0; j < mappingFileNames.length; j++) {
         const mappingFileName = mappingFileNames[j];
         // const regex = new RegExp(newProductFileName, 'i')
-        const formatedName = newProductFileName.replace(newProduct, mappingFileName)
+        const formatedName = newProductFileName.replace(
+          newProduct,
+          mappingFileName
+        );
         console.log('formatedName: ', formatedName);
-        await shell.exec(`cp ${tmpDir}/${newProductFileName} ${tmpDir}/${formatedName}`);
+        await shell.exec(
+          `cp ${tmpDir}/${newProductFileName} ${tmpDir}/${formatedName}`
+        );
       }
     }
   }
@@ -379,7 +503,7 @@ const compressOutput = async (tmpDir) => {
     const fileKBSize = (
       await shell.exec(`du -k ${tmpDir}/${fileInTmp} |cut -f1`)
     ).stdout;
-  
+
     if (parseFloat(fileKBSize) > 300) {
       console.log('压缩最终图');
       await shell.exec(
@@ -387,7 +511,7 @@ const compressOutput = async (tmpDir) => {
       );
     }
   }
-}
+};
 
 const extractAllSuqareImages = async () => {
   const tmpDir = '/tmp/allImages';
@@ -413,12 +537,22 @@ const extractAllSuqareImages = async () => {
   await shell.exec(`open ${tmpDir}`);
 };
 
+/**
+ * 分类图片: 根据 download 目录的图片视屏，将图片视屏归类为
+ *   - 主图
+ *   - 描述图
+ * 生成 json 文件
+ *   - 根据一级分类生成 -new_${一级分类}.json
+ *   - create_xls 只是用 new_ 前缀的文件
+ *   - 用一个脚本合并 new_ 前缀的文件 和已有的 json 目录
+ */
 const main = async () => {
   const { isNoBgFile, isFromTB } = process.env;
+  // 在 E-commerce 中根据产品名称创建目录
   await createDirs();
   await cpOriginFilesIntoSource();
   await doJob(!!isFromTB, !!isNoBgFile);
-  await extractAllSuqareImages();
+  // await extractAllSuqareImages();
 };
 
 main();
