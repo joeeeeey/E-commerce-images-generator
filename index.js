@@ -10,7 +10,7 @@ const imageMapping = require('./products/imageMapping');
 const rootFolder = `${homedir}/Downloads`;
 const productsFolder = `${rootFolder}/E-commerce`;
 
-const newProducts = ['宝娜斯2021新款字母防勾丝连裤袜黑色丝袜_双']
+const newProducts = ['宝娜斯2021新款字母防勾丝连裤袜黑色丝袜_双', '不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂铲']
 
 const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
 
@@ -517,7 +517,7 @@ const doJob = async (isNoBgFile = false) => {
 
   console.log('categoryMapping: ', categoryMapping);
   Object.keys(categoryMapping).forEach(async key => {
-    await shell.exec(`rm -rf products/new/`)
+    await shell.exec(`rm -rf products/new/*.json`)
     const path = `products/new/${key}.json`
     await fs.writeFileSync(path, JSON.stringify(categoryMapping[key]));
   })

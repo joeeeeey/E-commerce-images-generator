@@ -19,3 +19,6 @@ create_eleme_xls:
 
 open_website:
 	node ./find_supply/index.js
+
+merge_new_json_products:
+	node mergeNewProduct.js
