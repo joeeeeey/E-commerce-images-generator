@@ -482,11 +482,10 @@ const doJob = async (isNoBgFile = false) => {
   console.log('productsJsonData: ', productsJsonData);
 };
 
-const genMeituanFormatedImage = async (tmpDir) => {
-  const files = (await shell.ls(tmpDir)).stdout.split('\n').filter((x) => !!x);
-  console.log('files: ', files);
+const genMeituanFormattedImage = async (tmpDir, imageType) => {
+  const files = (await shell.ls(`${tmpDir}/${imageType}`)).stdout.split('\n').filter((x) => !!x);
 
-  await shell.exec(`mkdir -p ${tmpDir}/美团`);
+  await shell.exec(`mkdir -p ${tmpDir}/美团/${imageType}`);
   const picIndexPattern = /\-ec\d+\./i;
   // const fileName = '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A-ec2.jpg'
   for (let i = 0; i < files.length; i++) {
@@ -500,19 +499,19 @@ const genMeituanFormatedImage = async (tmpDir) => {
         '.'
       )}`;
       await shell.exec(
-        `cp ${tmpDir}/${fileName} ${tmpDir}/美团/${meituanFileName}`
+        `cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/美团/${imageType}/${meituanFileName}`
       );
     } else {
-      await shell.exec(`cp ${tmpDir}/${fileName} ${tmpDir}/美团/${fileName}`);
+      await shell.exec(`cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/美团/${imageType}/${fileName}`);
     }
   }
 };
 
-const genEleFormatedImage = async (tmpDir) => {
-  const files = (await shell.ls(tmpDir)).stdout.split('\n').filter((x) => !!x);
-  console.log('files: ', files);
+const genEleFormattedImage = async (tmpDir, imageType) => {
+  const files = (await shell.ls(`${tmpDir}/${imageType}`)).stdout.split('\n').filter((x) => !!x);
+  // console.log('files: ', files);
   // TODO fix meituan 文件夹  warning
-  await shell.exec(`mkdir -p ${tmpDir}/饿了么`);
+  await shell.exec(`mkdir -p ${tmpDir}/饿了么/${imageType}`);
   const picIndexPattern = /\-ec\d+\./i;
   // const fileName = '东成电钻水泥打灰打浆搅灰机J1Z-FF-16A-ec2.jpg'
   for (let i = 0; i < files.length; i++) {
@@ -526,10 +525,10 @@ const genEleFormatedImage = async (tmpDir) => {
         .replace('-', '_')
         .replace('.', `-${indexValue}.`);
       await shell.exec(
-        `cp ${tmpDir}/${fileName} ${tmpDir}/饿了么/${eleMeFileName}`
+        `cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/饿了么/${imageType}/${eleMeFileName}`
       );
     } else {
-      await shell.exec(`cp ${tmpDir}/${fileName} ${tmpDir}/饿了么/${fileName}`);
+      await shell.exec(`cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/饿了么/${imageType}/${fileName}`);
     }
   }
 };
@@ -559,13 +558,13 @@ const genSameImageWithDiffName = async (tmpDir) => {
       for (let j = 0; j < mappingFileNames.length; j++) {
         const mappingFileName = mappingFileNames[j];
         // const regex = new RegExp(newProductFileName, 'i')
-        const formatedName = newProductFileName.replace(
+        const formattedName = newProductFileName.replace(
           newProduct,
           mappingFileName
         );
-        console.log('formatedName: ', formatedName);
+        console.log('formattedName: ', formattedName);
         await shell.exec(
-          `cp ${tmpDir}/${newProductFileName} ${tmpDir}/${formatedName}`
+          `cp ${tmpDir}/${newProductFileName} ${tmpDir}/${formattedName}`
         );
       }
     }
@@ -576,7 +575,6 @@ const compressOutput = async (tmpDir) => {
   const filesInTmp = (await shell.ls(tmpDir)).stdout
     .split('\n')
     .filter((x) => !!x);
-
   for (let i = 0; i < filesInTmp.length; i++) {
     const fileInTmp = filesInTmp[i];
     const fileKBSize = (
@@ -584,7 +582,6 @@ const compressOutput = async (tmpDir) => {
     ).stdout;
 
     if (parseFloat(fileKBSize) > 300) {
-      console.log('压缩最终图');
       await shell.exec(
         `sips -Z 600 ${tmpDir}/${fileInTmp} --setProperty format jpeg`
       );
@@ -600,22 +597,38 @@ const extractAllOutputImages = async () => {
   const tmpDir = '/tmp/allImages';
 
   await shell.exec(`rm -rf ${tmpDir}`);
-  await shell.exec(`mkdir -p ${tmpDir}`);
+  await shell.exec(`mkdir -p ${tmpDir}/${mainOutputDir}`);
+  await shell.exec(`mkdir -p ${tmpDir}/${descriptionOutputDir}`);
   for (let i = 0; i < newProductsDir.length; i++) {
     const newProductDir = newProductsDir[i];
-    const outputDirFullPath = `${newProductDir}/${outPutDir}/${squareRatioOutputDir}`;
-    await shell.exec(`cp -r ${outputDirFullPath}/* ${tmpDir}/`);
+    const outputDirFullPath = `${newProductDir}/${outPutDir}`;
+    await shell.exec(`cp -r ${outputDirFullPath}/${mainOutputDir}/${imageTypeDir}/* ${tmpDir}/${mainOutputDir}`);
+    await shell.exec(`cp -r ${outputDirFullPath}/${descriptionOutputDir}/${imageTypeDir}/* ${tmpDir}/${descriptionOutputDir}`);
   }
 
-  // 压缩下图片
-  await compressOutput(tmpDir);
+  const imgTypesDir = [mainOutputDir, descriptionOutputDir]
+  // // 压缩下图片
+  for (let i = 0; i < imgTypesDir.length; i++) {
+    const dir = imgTypesDir[i];
+    await compressOutput(`${tmpDir}/${dir}`);
+  }
 
-  // 根据 mapping 关系生成不同命名的相同图片
-  await genSameImageWithDiffName(tmpDir);
+  // // 根据 mapping 关系生成不同命名的相同图片
+  for (let i = 0; i < imgTypesDir.length; i++) {
+    const dir = imgTypesDir[i];
+    await genSameImageWithDiffName(`${tmpDir}/${dir}`);
+  }
 
-  // 生成美团和饿了么格式的文件名
-  await genMeituanFormatedImage(tmpDir);
-  await genEleFormatedImage(tmpDir);
+  // // 生成美团和饿了么格式的文件名
+  for (let i = 0; i < imgTypesDir.length; i++) {
+    const dir = imgTypesDir[i];
+    await genMeituanFormattedImage(tmpDir, dir);
+  }
+
+  for (let i = 0; i < imgTypesDir.length; i++) {
+    const dir = imgTypesDir[i];
+    await genEleFormattedImage(tmpDir, dir);
+  }
 
   await shell.exec(`open ${tmpDir}`);
 };
@@ -635,7 +648,7 @@ const main = async () => {
   await createDirs();
   await cpOriginFilesIntoSource();
   await doJob(!!isFromTB, !!isNoBgFile);
-  // await extractAllOutputImages();
+  await extractAllOutputImages();
 };
 
 main();
