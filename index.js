@@ -245,6 +245,7 @@ const doJob = async (isNoBgFile = false) => {
   let productsJsonData = []
   for (let i = 0; i < newProductsDir.length; i++) {
     const newProductDir = newProductsDir[i];
+    const newProduct = newProducts[i];
 
     // 如果 source 文件下存在 image 文件， 则开始操作，否则跳过
     const sourceDirFullPath = `${newProductDir}/${sourceDir}`;
@@ -324,7 +325,6 @@ const doJob = async (isNoBgFile = false) => {
           );
         } else if (fileInfo.type === 'description') {
           const desPath = `${outPutDirFullName}/${descriptionOutputDir}/${imageTypeDir}/${fileInfo.realSourceName}`
-          console.log('desPathtypedescription: ', desPath);
           await shell.exec(
             `cp ${fileInSourceFullPath} ${desPath}`
           );
@@ -351,16 +351,16 @@ const doJob = async (isNoBgFile = false) => {
       }
     }
     // 生成 json 文件
-    // - 每次都生成名称为 products/new/${catrgory}.json
+    // - 每次都生成名称为 products/new/${category}.json
     // - 根据图片名称和 imageMapping 得到尽可能多的信息
 
     // 如果有 mapping 关系就生成多个商品名称
     let newProductJsonName = []
-    const mappingFileNames = imageMapping[newProducts];
+    const mappingFileNames = imageMapping[newProduct];
     if (mappingFileNames) {
       newProductJsonName = newProductJsonName.concat(mappingFileNames)
     } else {
-      newProductJsonName = [newProducts]
+      newProductJsonName = [newProduct]
     }
 
     const jsonData = newProductJsonName.map(x => {
@@ -480,8 +480,53 @@ const doJob = async (isNoBgFile = false) => {
   }
 
   console.log('productsJsonData: ', productsJsonData);
+
+  // {
+  //   "美团类别": "TODO_家装建材_厨房卫浴_水龙头",
+  //   "商品标题*": x,
+  //   "产地": "",
+  //   "商品品牌": "",
+  //   "规格名称": "",
+  //   "成本": "TODO",
+  //   "外部链接": "",
+  //   "价格（元）*": "TODO",
+  //   "库存*": "66",
+  //   "重量*": "TODO",
+  //   "重量单位": "g",
+  //   "商品条码(upc/ean等)": "",
+  //   "店内码/货号": "",
+  //   "店内一级分类*": productFirstCategory,
+  //   "店内二级分类": "",
+  //   "货架码/位置码": "",
+  //   "最小购买量": "1",
+  //   "售卖状态": "上架",
+  //   "描述": "",
+  //   "app_food_code": ""
+  // }
+
+  const categoryMapping = {}
+  for (let i = 0; i < productsJsonData.length; i++) {
+    const productJsonData = productsJsonData[i];
+    const firstCategory = productJsonData["店内一级分类*"]
+    if (!categoryMapping[firstCategory]) {
+      categoryMapping[firstCategory] = [productJsonData]
+    } else {
+      categoryMapping[firstCategory].push(productJsonData)
+    }
+  }
+
+  console.log('categoryMapping: ', categoryMapping);
+  Object.keys(categoryMapping).forEach(async key => {
+    await shell.exec(`rm -rf products/new/`)
+    const path = `products/new/${key}.json`
+    await fs.writeFileSync(path, JSON.stringify(categoryMapping[key]));
+  })
+
+
 };
 
+// 生成美团图片
+// 并且压缩主图文件夹
 const genMeituanFormattedImage = async (tmpDir, imageType) => {
   const files = (await shell.ls(`${tmpDir}/${imageType}`)).stdout.split('\n').filter((x) => !!x);
 
@@ -504,6 +549,11 @@ const genMeituanFormattedImage = async (tmpDir, imageType) => {
     } else {
       await shell.exec(`cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/美团/${imageType}/${fileName}`);
     }
+  }
+  if (imageType===mainOutputDir) {
+    // 压缩 main 文件夹
+    // 压缩文件放在 meituan 目录下
+    await shell.exec(`cd ${tmpDir}/美团 && zip -vr meituan_main.zip ${imageType}/ -x "*.DS_Store"`)
   }
 };
 
@@ -648,7 +698,7 @@ const main = async () => {
   await createDirs();
   await cpOriginFilesIntoSource();
   await doJob(!!isFromTB, !!isNoBgFile);
-  await extractAllOutputImages();
+  // await extractAllOutputImages();
 };
 
 main();

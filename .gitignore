@@ -6,3 +6,4 @@ yarn-error.log
 ._.DS_Store
 .history
 tmp/*
+products/new
