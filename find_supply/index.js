@@ -7,7 +7,7 @@ const keywords = ['猫砂铲'];
 
 const get1688EncodedKeyword = async (keyword) => {
   const result = await shell
-    .exec(`keyword=${keyword} python ./find_supply/get_1688_keywords.py`)
+    .exec(`keyword=${keyword} python3 ./find_supply/get_1688_keywords.py`)
     .stdout.split('\n')[0];
 
   console.log('result: ', result);

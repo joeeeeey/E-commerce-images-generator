@@ -1,15 +1,16 @@
 // node index.js
 // FILE_PATH='/Users/joeeey/Downloads/美团/刀片/11/IMG_2336-no-bg.jpg'  NEW_SQUARE_FILE_NAME='/Users/joeeey/Downloads/美团/刀片/11/IMG_2336-no-bg-square.jpg' ./convert2_1_1_one_file.sh
 
+const homedir = require('os').homedir();
 const request = require('request');
 const fs = require('fs');
 const shell = require('shelljs');
 const imageMapping = require('./products/imageMapping');
 
-const rootFolder = '/Users/joeeey/Downloads';
+const rootFolder = `${homedir}/Downloads`;
 const productsFolder = `${rootFolder}/E-commerce`;
 
-const newProducts = ['不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂'];
+const newProducts = ['宝娜斯2021新款字母防勾丝连裤袜黑色丝袜_双']
 
 const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
 
@@ -32,8 +33,60 @@ const meiduanElemaDir = '美团饿了么';
 const squareRatioOutputDir = '11';
 const mainOutputDir = 'main';
 const descriptionOutputDir = 'description';
+const imageTypeDir = 'image'
+const videoTypeDir = 'video'
 // // output/white-bg
 const whiteBgOutputDir = 'white-bg';
+
+// 调用 API 去除背景
+// TODO 试试淘宝的抠图 , https://luban.aliyun.com/web/gen-next/entry
+// 目前不支持 api
+function callRemoveBgAPI(
+  localFilePath,
+  whiteBgFileSavePath,
+  squareFileSavePath
+) {
+  return new Promise(function (resolve, reject) {
+    const { fileName, fileSuffix } = getFileInfoByPath(localFilePath);
+    request.post(
+      {
+        url: 'https://api.remove.bg/v1.0/removebg',
+        // url: 'https://example.com/',
+        formData: {
+          image_file: fs.createReadStream(localFilePath),
+          size: 'auto',
+        },
+        headers: {
+          'X-Api-Key': process.env.API_KEY,
+        },
+        encoding: null,
+      },
+      async function (error, response, body) {
+        console.log('body: ', body);
+        // console.log('response: ', response);
+        if (error) {
+          console.error('Request failed:', error);
+          reject(error);
+        }
+        if (response.statusCode != 200) {
+          console.error('Error:', response.statusCode, body.toString('utf8'));
+          reject(error);
+        }
+
+        const newFileFullPath = `${whiteBgFileSavePath}/${fileName}-no-bg.${fileSuffix}`;
+        await fs.writeFileSync(newFileFullPath, body);
+
+        const NEW_SQUARE_FILE_NAME = `${squareFileSavePath}/${fileName}.${fileSuffix}`;
+        // 生成 1000*1000 的图片
+        await shell.exec(
+          `FILE_PATH=${newFileFullPath} NEW_SQUARE_FILE_NAME=${NEW_SQUARE_FILE_NAME} ./convert2_1_1_one_file.sh`
+        );
+
+        resolve(1);
+      }
+    );
+  });
+}
 
 // 将 ['output', 'source', 'tb', '美团饿了么'] 目录创建
 const createDirs = async () => {
@@ -59,9 +112,18 @@ const createDirs = async () => {
       mainOutputDir,
       descriptionOutputDir,
     ];
+    const sourceTypesDir = [
+      imageTypeDir,
+      videoTypeDir,
+    ]
     outputSecondDirs.forEach(async (outputSecondDir) => {
       if (!fs.existsSync(`${outputDirFullPath}/${outputSecondDir}`)) {
         await fs.mkdirSync(`${outputDirFullPath}/${outputSecondDir}`);
+        if (outputSecondDir===mainOutputDir || outputSecondDir===descriptionOutputDir) {
+          sourceTypesDir.forEach(async (sourceTypeDir) => {
+            await fs.mkdirSync(`${outputDirFullPath}/${outputSecondDir}/${sourceTypeDir}`);
+          })
+        }
       }
     });
   }
@@ -161,6 +223,7 @@ const parseSourceFileName = (fileName) => {
 
   // console.log('getFromBetween: ', getFromBetween);
   getFromBetween.get(fileName, '{', '}').forEach((x) => {
+    console.log('fileName: ', fileName);
     console.log('x: ', x);
     dataMapping[x.split('-')[0]] = x.split('-').slice(1, 9999)[0];
   });
@@ -174,60 +237,12 @@ const parseSourceFileName = (fileName) => {
     dataMapping.fileType = 'video';
   }
   dataMapping.realSourceName = realSourceName;
+  dataMapping.category=dataMapping.c
   return dataMapping;
 };
 
-const doJob = async (isFromTB = false, isNoBgFile = false) => {
-  // 调用 API 去除背景
-  // TODO 试试淘宝的抠图 , https://luban.aliyun.com/web/gen-next/entry
-  // 目前不支持 api
-  function callRemoveBgAPI(
-    localFilePath,
-    whiteBgFileSavePath,
-    squareFileSavePath
-  ) {
-    return new Promise(function (resolve, reject) {
-      const { fileName, fileSuffix } = getFileInfoByPath(localFilePath);
-      request.post(
-        {
-          url: 'https://api.remove.bg/v1.0/removebg',
-          // url: 'https://example.com/',
-          formData: {
-            image_file: fs.createReadStream(localFilePath),
-            size: 'auto',
-          },
-          headers: {
-            'X-Api-Key': process.env.API_KEY,
-          },
-          encoding: null,
-        },
-        async function (error, response, body) {
-          console.log('body: ', body);
-          // console.log('response: ', response);
-          if (error) {
-            console.error('Request failed:', error);
-            reject(error);
-          }
-          if (response.statusCode != 200) {
-            console.error('Error:', response.statusCode, body.toString('utf8'));
-            reject(error);
-          }
-
-          const newFileFullPath = `${whiteBgFileSavePath}/${fileName}-no-bg.${fileSuffix}`;
-          await fs.writeFileSync(newFileFullPath, body);
-
-          const NEW_SQUARE_FILE_NAME = `${squareFileSavePath}/${fileName}.${fileSuffix}`;
-          // 生成 1000*1000 的图片
-          await shell.exec(
-            `FILE_PATH=${newFileFullPath} NEW_SQUARE_FILE_NAME=${NEW_SQUARE_FILE_NAME} ./convert2_1_1_one_file.sh`
-          );
-
-          resolve(1);
-        }
-      );
-    });
-  }
-
+const doJob = async (isNoBgFile = false) => {
+  let productsJsonData = []
   for (let i = 0; i < newProductsDir.length; i++) {
     const newProductDir = newProductsDir[i];
 
@@ -241,13 +256,14 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
       continue;
     }
 
-    // TODO isFromTB 从图片名称计算出来
-
-    // 尺寸太小的话用 sips 扩展到(根据当前比例)最大边为 1000
+    // 遍历 download 中的 source 文件
+    // 分析文件类型，主图还是描述，放入对应的文件夹
+    let productFirstCategory = ''
     for (let j = 0; j < filesInSource.length; j++) {
       const fileInSource = filesInSource[j];
-
+      
       const fileInfo = parseSourceFileName(fileInSource);
+      productFirstCategory = fileInfo.category
       // {fileType: 'image',p: 'xx', t: 'main', c: 'category', n: 'xxx', realSourceName: '不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂-ec0.jpg'}
       console.log('fileInfo: ', fileInfo);
       //  TODO do we need video operation
@@ -262,6 +278,7 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
           await shell.exec(`identify -format '%w %h' ${fileInSourceFullPath}`)
         ).stdout;
 
+        // 主图操作
         if (fileInfo.t === 'main') {
           const [imageWidth, imageHeight] = imageDimmesion;
           // 主图如果不是 1:1 直接四周留白
@@ -300,19 +317,78 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
 
         // 拷贝调整后的图片放入 output 中
         // 文件名使用不带有 {} 的
-        if (fileInfo.t === 'main') {
-          console.log('main: herere', fileInSourceFullPath, );
-          console.log('main22222: ', `${outPutDirFullName}/${squareRatioOutputDir}/${fileInfo.realSourceName}`)
+        if (fileInfo.type === 'main') {
+          const desPath = `${outPutDirFullName}/${mainOutputDir}/${imageTypeDir}/${fileInfo.realSourceName}`
           await shell.exec(
-            `cp ${fileInSourceFullPath} ${outPutDirFullName}/${mainOutputDir}/${fileInfo.realSourceName}`
+            `cp ${fileInSourceFullPath} ${desPath}`
           );
-        } else if (fileInfo.t === 'description') {
+        } else if (fileInfo.type === 'description') {
+          const desPath = `${outPutDirFullName}/${descriptionOutputDir}/${imageTypeDir}/${fileInfo.realSourceName}`
+          console.log('desPathtypedescription: ', desPath);
           await shell.exec(
-            `cp ${fileInSourceFullPath} ${outPutDirFullName}/${descriptionOutputDir}/${fileInfo.realSourceName}`
+            `cp ${fileInSourceFullPath} ${desPath}`
           );
         }
+      } else {
+        // 不存在 platform, 说明是自己拍的图
+
+        // 将大于 5M 的图片压缩下保存到原始位置
+        const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
+        const fileKBSize = parseFloat(
+          (await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)).stdout
+        );
+        console.log('fileKBSize: ', fileKBSize);
+        if (fileKBSize > 5 * 1024) {
+          console.log('图片大于 5*1024k');
+          const compressRate = 1 - (fileKBSize - 5 * 1024 + 300) / (5 * 1024);
+          await shell.exec(
+            `convert ${fileInSourceFullPath} -resize ${compressRate * 100
+            }% ${fileInSourceFullPath}`
+          );
+        }
+
+        // TODO 参照之前的逻辑完成这段逻辑
       }
     }
+    // 生成 json 文件
+    // - 每次都生成名称为 products/new/${catrgory}.json
+    // - 根据图片名称和 imageMapping 得到尽可能多的信息
+
+    // 如果有 mapping 关系就生成多个商品名称
+    let newProductJsonName = []
+    const mappingFileNames = imageMapping[newProducts];
+    if (mappingFileNames) {
+      newProductJsonName = newProductJsonName.concat(mappingFileNames)
+    } else {
+      newProductJsonName = [newProducts]
+    }
+
+    const jsonData = newProductJsonName.map(x => {
+      // productFirstCategory
+      return {
+        "美团类别": "TODO_家装建材_厨房卫浴_水龙头",
+        "商品标题*": x,
+        "产地": "",
+        "商品品牌": "",
+        "规格名称": "",
+        "成本": "TODO",
+        "外部链接": "",
+        "价格（元）*": "TODO",
+        "库存*": "66",
+        "重量*": "TODO",
+        "重量单位": "g",
+        "商品条码(upc/ean等)": "",
+        "店内码/货号": "",
+        "店内一级分类*": productFirstCategory,
+        "店内二级分类": "",
+        "货架码/位置码": "",
+        "最小购买量": "1",
+        "售卖状态": "上架",
+        "描述": "",
+        "app_food_code": ""
+      }
+    })
+    productsJsonData = productsJsonData.concat(jsonData)
 
     // await shell.exec(
     //   `cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${squareRatioOutputDir}`
@@ -320,46 +396,44 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
     continue;
 
     // 本来就是白底图 将图片从 source 拷贝到 no-bg 放大成 1:1 放到 square 中
-    if (isNoBgFile) {
-      // const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
-      await shell.exec(
-        `cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${whiteBgOutputDir}`
-      );
+    // if (isNoBgFile) {
+    //   await shell.exec(
+    //     `cp -r ${sourceDirFullPath}/* ${outPutDirFullName}/${whiteBgOutputDir}`
+    //   );
 
-      const filesInNoBg = (
-        await shell.exec(`ls ${outPutDirFullName}/${whiteBgOutputDir}`).stdout
-      )
-        .split('\n')
-        .filter((x) => !!x);
-      filesInNoBg.forEach(async (fileInNoBg) => {
-        const fileInWhiteBgOutputFullPath = `${outPutDirFullName}/${whiteBgOutputDir}/${fileInNoBg}`;
-        const squareFileSavePath = `${outPutDirFullName}/${squareRatioOutputDir}`;
-        const NEW_SQUARE_FILE_NAME = `${squareFileSavePath}/${fileInNoBg}`;
-        // 生成 1:1 的图片
-        await shell.exec(
-          `FILE_PATH=${fileInWhiteBgOutputFullPath} NEW_SQUARE_FILE_NAME=${NEW_SQUARE_FILE_NAME} ./convert2_1_1_one_file.sh`
-        );
-      });
+    //   const filesInNoBg = (
+    //     await shell.exec(`ls ${outPutDirFullName}/${whiteBgOutputDir}`).stdout
+    //   )
+    //     .split('\n')
+    //     .filter((x) => !!x);
+    //   filesInNoBg.forEach(async (fileInNoBg) => {
+    //     const fileInWhiteBgOutputFullPath = `${outPutDirFullName}/${whiteBgOutputDir}/${fileInNoBg}`;
+    //     const squareFileSavePath = `${outPutDirFullName}/${squareRatioOutputDir}`;
+    //     const NEW_SQUARE_FILE_NAME = `${squareFileSavePath}/${fileInNoBg}`;
+    //     // 生成 1:1 的图片
+    //     await shell.exec(
+    //       `FILE_PATH=${fileInWhiteBgOutputFullPath} NEW_SQUARE_FILE_NAME=${NEW_SQUARE_FILE_NAME} ./convert2_1_1_one_file.sh`
+    //     );
+    //   });
 
-      continue;
-    }
+    //   continue;
+    // }
 
-    filesInSource.forEach(async (fileInSource) => {
-      const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
-      const fileKBSize = parseFloat(
-        (await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)).stdout
-      );
-      console.log('fileKBSize: ', fileKBSize);
-      if (fileKBSize > 5 * 1024) {
-        console.log('图片大于 5*1024k');
-        const compressRate = 1 - (fileKBSize - 5 * 1024 + 300) / (5 * 1024);
-        await shell.exec(
-          `convert ${fileInSourceFullPath} -resize ${
-            compressRate * 100
-          }% ${fileInSourceFullPath}`
-        );
-      }
-    });
+    // filesInSource.forEach(async (fileInSource) => {
+    //   const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
+    //   const fileKBSize = parseFloat(
+    //     (await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)).stdout
+    //   );
+    //   console.log('fileKBSize: ', fileKBSize);
+    //   if (fileKBSize > 5 * 1024) {
+    //     console.log('图片大于 5*1024k');
+    //     const compressRate = 1 - (fileKBSize - 5 * 1024 + 300) / (5 * 1024);
+    //     await shell.exec(
+    //       `convert ${fileInSourceFullPath} -resize ${compressRate * 100
+    //       }% ${fileInSourceFullPath}`
+    //     );
+    //   }
+    // });
     //  如果图片大于 5m，把图片压缩下让其小于 5m
     // convert /Users/joeeey/Downloads/IMG_2377.jpg  -resize 80% /Users/joeeey/Downloads/IMG_2377.jpg
 
@@ -404,6 +478,8 @@ const doJob = async (isFromTB = false, isNoBgFile = false) => {
       );
     }
   }
+
+  console.log('productsJsonData: ', productsJsonData);
 };
 
 const genMeituanFormatedImage = async (tmpDir) => {
@@ -458,6 +534,9 @@ const genEleFormatedImage = async (tmpDir) => {
   }
 };
 
+// 适用于不同规格的相同产品
+// 比如铅笔蓝色, 铅笔红色，在生存 json 文件时，应该用规格名
+// 根据 mapping 关系生成不同命名的相同图片
 const genSameImageWithDiffName = async (tmpDir) => {
   console.log('genSameImageWithDiffName: ');
   const filesInTmp = (await shell.ls(tmpDir)).stdout
@@ -513,15 +592,19 @@ const compressOutput = async (tmpDir) => {
   }
 };
 
-const extractAllSuqareImages = async () => {
+// 提取所有 image
+// - 只是把 output 里面文件夹的图片拿出来，不做其他处理
+// - 为了适应目前平台，不同商品的图片会混在一起，而不是单独的文件夹
+// - images 中分为 main 和 description 两个文件夹, main 中的逻辑与之前相同
+const extractAllOutputImages = async () => {
   const tmpDir = '/tmp/allImages';
 
   await shell.exec(`rm -rf ${tmpDir}`);
   await shell.exec(`mkdir -p ${tmpDir}`);
   for (let i = 0; i < newProductsDir.length; i++) {
     const newProductDir = newProductsDir[i];
-    const sourceDirFullPath = `${newProductDir}/${outPutDir}/${squareRatioOutputDir}`;
-    await shell.exec(`cp -r ${sourceDirFullPath}/* ${tmpDir}/`);
+    const outputDirFullPath = `${newProductDir}/${outPutDir}/${squareRatioOutputDir}`;
+    await shell.exec(`cp -r ${outputDirFullPath}/* ${tmpDir}/`);
   }
 
   // 压缩下图片
@@ -552,7 +635,7 @@ const main = async () => {
   await createDirs();
   await cpOriginFilesIntoSource();
   await doJob(!!isFromTB, !!isNoBgFile);
-  // await extractAllSuqareImages();
+  // await extractAllOutputImages();
 };
 
 main();

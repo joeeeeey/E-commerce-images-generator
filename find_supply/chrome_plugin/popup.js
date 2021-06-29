@@ -44,8 +44,8 @@ const handleDownloadResource = () => {
     const splitValues = productName.split(' ')
     if (splitValues.length > 1) {
 
-      productCategory = splitValues[0]
-      productName = splitValues[1]
+      productName = splitValues[0]
+      productCategory = splitValues[1]
     }
     if (window.location.pathname.includes('/pic')) {
       const containers = document
