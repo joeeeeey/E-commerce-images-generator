@@ -22,7 +22,9 @@ const main = async () => {
     if (existJsonFiles.includes(newJsonFile)) {
       const existJsonData = JSON.parse(await fs.readFileSync(`${newProductPath}/${newJsonFile}`, 'utf-8'))
       const newJsonData = JSON.parse(await fs.readFileSync(`${existProduct}/${newJsonFile}`, 'utf-8'))
-      fs.writeFileSync(`${existProduct}/${newJsonFile}`, JSON.stringify(newJsonData.concat(existJsonData)))
+      // format stringify by undefined, 2
+      fs.writeFileSync(`${existProduct}/${newJsonFile}`, JSON.stringify(newJsonData.concat(existJsonData),undefined,2))
+
     } else {
       await shell.exec(`cp ${newProductPath}/${newJsonFile} ${existProduct}/${newJsonFile}`)
     }
