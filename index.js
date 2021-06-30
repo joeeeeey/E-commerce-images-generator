@@ -10,6 +10,7 @@ const imageMapping = require('./products/imageMapping');
 const rootFolder = `${homedir}/Downloads`;
 const productsFolder = `${rootFolder}/E-commerce`;
 
+// TODO 用户不需要修改此处
 const newProducts = ['宝娜斯2021新款字母防勾丝连裤袜黑色丝袜_双', '不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂铲']
 
 const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
@@ -28,7 +29,7 @@ const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
 const outPutDir = 'output';
 const sourceDir = 'source';
 const taobaoDir = 'tb';
-const meiduanElemaDir = '美团饿了么';
+const meituanElemaDir = '美团饿了么';
 // output/11
 const squareRatioOutputDir = '11';
 const mainOutputDir = 'main';
@@ -97,7 +98,7 @@ const createDirs = async () => {
     }
 
     // 创建第一层目录
-    const oneLevelDirs = [outPutDir, sourceDir, taobaoDir, meiduanElemaDir];
+    const oneLevelDirs = [outPutDir, sourceDir, taobaoDir, meituanElemaDir];
     oneLevelDirs.forEach(async (oneLevelDir) => {
       if (!fs.existsSync(`${newProductDir}/${oneLevelDir}`)) {
         await fs.mkdirSync(`${newProductDir}/${oneLevelDir}`);
@@ -374,6 +375,7 @@ const doJob = async (isNoBgFile = false) => {
     const jsonData = newProductJsonName.map(x => {
       return {
         "美团类别": "TODO_家装建材_厨房卫浴_水龙头",
+        "饿了么类别": "TODO_家装建材_厨房卫浴_水龙头",
         "商品标题*": x,
         "外部链接": externalProductData.productUrl,
         "产地": "",
@@ -486,31 +488,6 @@ const doJob = async (isNoBgFile = false) => {
     }
   }
 
-  console.log('productsJsonData: ', productsJsonData);
-
-  // {
-  //   "美团类别": "TODO_家装建材_厨房卫浴_水龙头",
-  //   "商品标题*": x,
-  //   "产地": "",
-  //   "商品品牌": "",
-  //   "规格名称": "",
-  //   "成本": "TODO",
-  //   "外部链接": "",
-  //   "价格（元）*": "TODO",
-  //   "库存*": "66",
-  //   "重量*": "TODO",
-  //   "重量单位": "g",
-  //   "商品条码(upc/ean等)": "",
-  //   "店内码/货号": "",
-  //   "店内一级分类*": productFirstCategory,
-  //   "店内二级分类": "",
-  //   "货架码/位置码": "",
-  //   "最小购买量": "1",
-  //   "售卖状态": "上架",
-  //   "描述": "",
-  //   "app_food_code": ""
-  // }
-
   const categoryMapping = {}
   for (let i = 0; i < productsJsonData.length; i++) {
     const productJsonData = productsJsonData[i];
@@ -522,7 +499,6 @@ const doJob = async (isNoBgFile = false) => {
     }
   }
 
-  console.log('categoryMapping: ', categoryMapping);
   Object.keys(categoryMapping).forEach(async key => {
     await shell.exec(`rm -rf products/new/*.json`)
     const path = `products/new/${key}.json`

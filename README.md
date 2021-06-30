@@ -1,6 +1,11 @@
 - 自动创建多级目录
 - 将 source 图片输出为白底图 | 1:1 白底图
 
+### Env
+- python3
+- nodejs
+- ImageMagic
+
 ### Run
 node index.js
 
