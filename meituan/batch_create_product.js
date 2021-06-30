@@ -27,15 +27,15 @@ const pickObjByKeys = (obj, keys, ingoreNull = true) => {
 const getAllProductData = async () => {
   let data = [];
 
-  const files = ['new.json']
-  // const files = (await shell.exec(`ls ../products/`).stdout)
-  //   .split('\n')
-  //   .filter((x) => !!x);
+  // const files = ['new.json']
+  const files = (await shell.exec(`ls ../products/new`).stdout)
+    .split('\n')
+    .filter((x) => !!x);
 
   await files.forEach(async (file) => {
     if (file.includes('json')) {
       const productData = JSON.parse(
-        await fs.readFileSync(`../products/${file}`, 'utf8')
+        await fs.readFileSync(`../products/new/${file}`, 'utf8')
       );
       data = data.concat(productData);
     }

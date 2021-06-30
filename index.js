@@ -264,13 +264,14 @@ const doJob = async (isNoBgFile = false) => {
       const fileInSource = filesInSource[j];
       
       const fileInfo = parseSourceFileName(fileInSource);
-      productFirstCategory = fileInfo.category
       // {fileType: 'image',p: 'xx', t: 'main', c: 'category', n: 'xxx', realSourceName: '不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂-ec0.jpg'}
       console.log('fileInfo: ', fileInfo);
       //  TODO do we need video operation
-      if (fileInfo.fileType === 'video') {
+      if (fileInfo.fileType !== 'image') {
         continue;
       }
+
+      productFirstCategory = fileInfo.category
 
       const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
       // 存在 platform, 说明是从电商平台获得的资源
@@ -363,16 +364,22 @@ const doJob = async (isNoBgFile = false) => {
       newProductJsonName = [newProduct]
     }
 
+    // Get productJsonFile
+    // chrome 插件会从从电商平台下载图片时下载一些其他商品信息
+    let externalProductData = {}
+    const externalJsonFilePath = `${rootFolder}/${newProduct}.json`
+    if (fs.existsSync(externalJsonFilePath)) {
+      externalProductData = JSON.parse(await fs.readFileSync(`${rootFolder}/${newProduct}.json`, 'utf8'));
+    }
     const jsonData = newProductJsonName.map(x => {
-      // productFirstCategory
       return {
         "美团类别": "TODO_家装建材_厨房卫浴_水龙头",
         "商品标题*": x,
+        "外部链接": externalProductData.productUrl,
         "产地": "",
         "商品品牌": "",
         "规格名称": "",
-        "成本": "TODO",
-        "外部链接": "",
+        "成本": externalProductData.cost,
         "价格（元）*": "TODO",
         "库存*": "66",
         "重量*": "TODO",
@@ -519,7 +526,7 @@ const doJob = async (isNoBgFile = false) => {
   Object.keys(categoryMapping).forEach(async key => {
     await shell.exec(`rm -rf products/new/*.json`)
     const path = `products/new/${key}.json`
-    await fs.writeFileSync(path, JSON.stringify(categoryMapping[key]));
+    await fs.writeFileSync(path, JSON.stringify(categoryMapping[key], undefined, 2));
   })
 
 
