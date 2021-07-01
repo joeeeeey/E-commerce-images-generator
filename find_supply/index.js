@@ -3,7 +3,7 @@
 const fs = require('fs');
 const shell = require('shelljs');
 
-const keywords = ['猫砂铲'];
+const keywords = ['乌江涪陵榨菜'];
 
 const get1688EncodedKeyword = async (keyword) => {
   const result = await shell
@@ -49,7 +49,6 @@ const main = async () => {
       const urls = await fn(keyword);
       for (let j = 0; j < urls.length; j++) {
         const url = urls[j];
-        console.log('url: ', url);
         links.push(url);
       }
     }

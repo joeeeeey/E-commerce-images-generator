@@ -53,16 +53,22 @@ const handleDownloadResource = () => {
       productName = splitValues[0];
       productCategory = splitValues[1];
     }
+    if (!productCategory) {
+      alert('productCategory is null!');
+      return;
+    }
     if (window.location.pathname.includes('/pic')) {
       const containers = document
         .getElementsByClassName('tab-nav-container')[0]
         .querySelectorAll('.tab-trigger');
       for (let i = 0; i < containers.length; i++) {
         const container = containers[i];
-        forceDownload(
-          container.querySelector('img').src,
-          `{p-1688}{type-main}{c-${productCategory}}{n-${productName}}end-ec${i}.jpg`
-        );
+        setTimeout(() => {
+          forceDownload(
+            container.querySelector('img').src,
+            `{p-1688}{type-main}{c-${productCategory}}{n-${productName}}end-ec${i}.jpg`
+          );
+        }, Math.random() * 2000);
       }
     }
 
@@ -94,12 +100,16 @@ const handleDownloadResource = () => {
         }
       }
 
-      imgEles.forEach((ele, i) => {
-        console.log('ele.src: ', ele.src);
-        forceDownload(
-          ele.src,
-          `{p-1688}{type-description}{c-${productCategory}}{n-${productName}}end-ec${i}.jpg`
-        );
+      imgEles.forEach(async (ele, i) => {
+        // console.log('ele.src: ', ele.src);
+
+        setTimeout(() => {
+          console.log('ele.src: ', ele.src);
+          forceDownload(
+            ele.src,
+            `{p-1688}{type-description}{c-${productCategory}}{n-${productName}}end-ec${i}.jpg`
+          );
+        }, Math.random() * 6000);
       });
 
       // Get the price and product url
@@ -145,6 +155,55 @@ const handleGoto1688MainPicPage = () => {
   } else {
     alert('pathname not includes 1688');
   }
+};
+
+// const getCookies = () => {
+//   var cookies = document.cookie.split(';');
+//   var ret = '';
+//   for (var i = 1; i <= cookies.length; i++) {
+//       ret += i + ' - ' + cookies[i - 1] + "<br>";
+//   }
+//   return ret;
+// }
+
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// 导出饿了么商品
+const exportELEProducts = () => {
+  const ebToken = getCookie("WMSTOKEN")
+
+  fetch(
+    'https://mtop.ele.me/h5/mtop.ele.newretail.itemjob.create/1.0?jsv=2.6.1&appKey=12574478&t=1625207649192&sign=33850aefb1c5decc758b826aa6054642&api=mtop.ele.newretail.itemJob.create&v=1.0&type=json&dataType=json&valueType=string',
+    {
+      method: 'POST',
+      credentials: "same-origin",
+      headers: {
+        accept: 'application/json',
+        'x-ele-eb-token':
+          `${ebToken};${ebToken}`,
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-ele-platform': 'eb',
+        mode: 'cors', // no-cors, *cors, same-origin
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, *same-origin, omit
+        // 'Set-Cookie': document.cookie,
+          // "WMUSS=${ebToken}; WMSTOKEN=${ebToken}; OUTER_AUTH_LOGIN=${ebToken}%3B${ebToken}; cna=tXxkGXcov2cCAT2qh4nsvPM6; _m_h5_tk=edeb9fe6a9ea1b9ac3be03b075a7efb3_1625212900546; _m_h5_tk_enc=4e7e229b9916d5a9bf2dda1663af3b28; xlly_s=1; EGG_SESS=E8JLyvyH2YhLC4z2MSK64VHJVPAVNs5Xo4EKRs13lLA3VqH_eBFkYpLio-qtN92J; tfstk=coPcBu4wv0tQ6tDudsGbokcKjbpca1YrDlrba5aygoRtUKVSusqyUpRrbTmum5p1.; l=eBO-4MF7j9XVD4HQBO5Cnurza77TrIdb8sPzaNbMiInca6GPesG0dNCBLktpDdtx_t5VnetrnrEgPREpPJzLSxMk2k2yLb1rGwJM8e1..; isg=BLCw9o-BpG3VrHhp-aOz2EwegXgC-ZRD2L6gJaoAsIv3ZVEPUg13074XvGUFdUwb'",
+      },
+      body: {
+        data: '%7B%22jobType%22%3A%22ITEM_EXPORT%22%2C%22jobKey%22%3A%22store_524915311%22%2C%22ext%22%3A%22%7B%5C%22sellerId%5C%22%3A%5C%222210984392918%5C%22%2C%5C%22storeId%5C%22%3A%5C%22524915311%5C%22%7D%22%7D',
+      },
+    }
+  )
+    .then((response) => {
+      console.log(response.json().then((res) => console.log(res)));
+    })
+    .catch((err) => {
+      console.error(err);
+    });
 };
 
 donwloadSourceBtn.addEventListener('click', async () => {

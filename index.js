@@ -6,12 +6,34 @@ const request = require('request');
 const fs = require('fs');
 const shell = require('shelljs');
 const imageMapping = require('./products/imageMapping');
+const { getNameCodeMapping } = require('./eleme/copyImageFilesWithUuid');
 
 const rootFolder = `${homedir}/Downloads`;
 const productsFolder = `${rootFolder}/E-commerce`;
 
 // TODO 用户不需要修改此处
-const newProducts = ['宝娜斯2021新款字母防勾丝连裤袜黑色丝袜_双', '不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂铲']
+const newProducts = [
+  '宝娜斯丝袜连裤袜纯黑无图案_双',
+  '宝娜斯丝袜连裤袜纯小字母_双',
+  '宝娜斯丝袜连裤袜纯GIRL大字母_双',
+  '得力白板笔黑色可擦除画板笔写字笔_支',
+  '得力白板笔红色可擦除画板笔写字笔_支',
+  '得力白板笔蓝色可擦除画板笔写字笔_支',
+  '正彩黑色中性笔签字笔水笔0.5mm_支',
+  '正彩蓝色中性笔签字笔水笔0.5mm_支',
+  '正彩红色中性笔签字笔水笔0.5mm_支',
+  '笔记本A5_30张工作软抄本作业练习本_本',
+  '卡通橡皮擦果蔬夹心_块',
+  '心相印抽纸巾茶语丝享132x98x200mm3包_份',
+  '清风抽纸原木纯品软包136x94x50mm3层100抽4包_份',
+  '清风抽纸原木纯品软包136x94x50mm3层100抽1包_份',
+  '无盖粘毛器筒黏衣物宠物粘毛滚筒毛刷_把',
+  '有盖粘毛器筒黏衣物宠物粘毛滚筒毛刷_把',
+  '可为猫砂铲猫屎铲宠物清洁29.5x12.8x5.5cm_把',
+  '宠物奶瓶狗奶瓶猫奶瓶猫咪奶瓶幼犬幼猫奶瓶50ml_个',
+  '宠物奶瓶狗奶瓶猫奶瓶猫咪奶瓶幼犬幼猫奶瓶120ml_个',
+  '酷尔克豆腐猫砂2.3kg原味绿茶无尘除臭结团_袋',
+]
 
 const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
 
@@ -199,7 +221,9 @@ const cpOriginFilesIntoSource = async () => {
 // 注意 . 只能出现一次
 const getFileInfoByPath = (path) => {
   const fileFullname = path.split('/').pop();
-  const [fileName, fileSuffix] = fileFullname.split('.');
+  const splitWithDotArr = fileFullname.split('.')
+  const fileSuffix = splitWithDotArr.pop()
+  const fileName = splitWithDotArr.slice(0, splitWithDotArr.length-1).join('.')
   return {
     fileName,
     fileSuffix,
@@ -348,7 +372,6 @@ const doJob = async (isNoBgFile = false) => {
             }% ${fileInSourceFullPath}`
           );
         }
-
         // TODO 参照之前的逻辑完成这段逻辑
       }
     }
@@ -393,7 +416,7 @@ const doJob = async (isNoBgFile = false) => {
         "货架码/位置码": "",
         "最小购买量": "1",
         "售卖状态": "上架",
-        "描述": "",
+        "描述": x,
         "app_food_code": ""
       }
     })
@@ -541,8 +564,10 @@ const genMeituanFormattedImage = async (tmpDir, imageType) => {
 };
 
 const genEleFormattedImage = async (tmpDir, imageType) => {
+  const nameCodeMapping = await getNameCodeMapping();
+  console.log('nameCodeMapping: ', nameCodeMapping);
   const files = (await shell.ls(`${tmpDir}/${imageType}`)).stdout.split('\n').filter((x) => !!x);
-  // console.log('files: ', files);
+
   // TODO fix meituan 文件夹  warning
   await shell.exec(`mkdir -p ${tmpDir}/饿了么/${imageType}`);
   const picIndexPattern = /\-ec\d+\./i;
@@ -553,13 +578,21 @@ const genEleFormattedImage = async (tmpDir, imageType) => {
     if (matchedValue) {
       picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
       const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
-      const eleMeFileName = fileName
+      const eleMeFileNameArray = fileName
         .replace(picIndex, '.')
         .replace('-', '_')
-        .replace('.', `-${indexValue}.`);
-      await shell.exec(
-        `cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/饿了么/${imageType}/${eleMeFileName}`
-      );
+        .split('.')
+      const eleMeFileName = eleMeFileNameArray.slice(0, eleMeFileNameArray.length-1).join('.') +  `-${indexValue}.` + eleMeFileNameArray.pop()
+      // const productName = eleMeFileName.split('-')[0]
+      const productUid = nameCodeMapping[eleMeFileName.split('-')[0]]
+      if (productUid) {
+        await shell.exec(
+          `cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/饿了么/${imageType}/${productUid}-${indexValue}.jpg`
+        );
+      } else {
+        console.log(`${fileName} can not find uid!!`)
+        return
+      }
     } else {
       await shell.exec(`cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/饿了么/${imageType}/${fileName}`);
     }
@@ -570,15 +603,12 @@ const genEleFormattedImage = async (tmpDir, imageType) => {
 // 比如铅笔蓝色, 铅笔红色，在生存 json 文件时，应该用规格名
 // 根据 mapping 关系生成不同命名的相同图片
 const genSameImageWithDiffName = async (tmpDir) => {
-  console.log('genSameImageWithDiffName: ');
   const filesInTmp = (await shell.ls(tmpDir)).stdout
     .split('\n')
     .filter((x) => !!x);
   for (let i = 0; i < newProducts.length; i++) {
     const newProduct = newProducts[i];
-    console.log('newProducts: ', newProduct);
     const mappingFileNames = imageMapping[newProduct];
-    console.log('mappingFileNames: ', mappingFileNames);
     if (!mappingFileNames) continue;
     const newProductFileNames = filesInTmp.filter((x) =>
       x.includes(newProduct)
@@ -641,10 +671,10 @@ const extractAllOutputImages = async () => {
 
   const imgTypesDir = [mainOutputDir, descriptionOutputDir]
   // // 压缩下图片
-  for (let i = 0; i < imgTypesDir.length; i++) {
-    const dir = imgTypesDir[i];
-    await compressOutput(`${tmpDir}/${dir}`);
-  }
+  // for (let i = 0; i < imgTypesDir.length; i++) {
+  //   const dir = imgTypesDir[i];
+  //   await compressOutput(`${tmpDir}/${dir}`);
+  // }
 
   // // 根据 mapping 关系生成不同命名的相同图片
   for (let i = 0; i < imgTypesDir.length; i++) {
@@ -652,15 +682,17 @@ const extractAllOutputImages = async () => {
     await genSameImageWithDiffName(`${tmpDir}/${dir}`);
   }
 
-  // // 生成美团和饿了么格式的文件名
-  for (let i = 0; i < imgTypesDir.length; i++) {
-    const dir = imgTypesDir[i];
-    await genMeituanFormattedImage(tmpDir, dir);
-  }
-
+  // 生成饿了么格式的文件名
   for (let i = 0; i < imgTypesDir.length; i++) {
     const dir = imgTypesDir[i];
     await genEleFormattedImage(tmpDir, dir);
+  }
+  return
+
+  // 生成饿了么格式的文件名
+  for (let i = 0; i < imgTypesDir.length; i++) {
+    const dir = imgTypesDir[i];
+    await genMeituanFormattedImage(tmpDir, dir);
   }
 
   await shell.exec(`open ${tmpDir}`);
@@ -678,10 +710,10 @@ const extractAllOutputImages = async () => {
 const main = async () => {
   const { isNoBgFile, isFromTB } = process.env;
   // 在 E-commerce 中根据产品名称创建目录
-  await createDirs();
-  await cpOriginFilesIntoSource();
-  await doJob(!!isFromTB, !!isNoBgFile);
-  // await extractAllOutputImages();
+  // await createDirs();
+  // await cpOriginFilesIntoSource();
+  // await doJob(!!isFromTB, !!isNoBgFile);
+  await extractAllOutputImages();
 };
 
 main();
