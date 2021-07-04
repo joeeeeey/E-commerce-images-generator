@@ -8,3 +8,4 @@ yarn-error.log
 tmp/*
 !tmp/.keep
 products/new
+products/new_store

@@ -28,7 +28,7 @@ const getAllProductData = async () => {
   let data = [];
 
   // const files = ['new.json']
-  const files = (await shell.exec(`ls ../products/new`).stdout)
+  const files = (await shell.exec(`ls ../products/new|grep json`).stdout)
     .split('\n')
     .filter((x) => !!x);
 
