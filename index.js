@@ -5,6 +5,13 @@ const homedir = require('os').homedir();
 const request = require('request');
 const fs = require('fs');
 const shell = require('shelljs');
+const { storeNewJsonFileAtLocal, callRemoveBgAPI } = require('./helpers/index');
+const {
+  parseSourceFileName,
+  genSameImageWithDiffName,
+  getFileIndexMapping,
+  getFileInfoByPath,
+} = require('./helpers/sourceFile');
 const imageMapping = require('./products/imageMapping');
 const { getNameCodeMapping } = require('./eleme/copyImageFilesWithUuid');
 
@@ -35,27 +42,27 @@ const newProducts = [
   // '酷尔克豆腐猫砂2.3kg原味绿茶无尘除臭结团_袋',
 
   '白色女款M号一次性内裤便纯棉5条_袋',
-  '白色女款L号一次性内裤便纯棉5条_袋',
-  '白色男款L号一次性内裤便纯棉5条_袋',
-  '白色男款XL号一次性内裤便纯棉5条_袋',
-  '蓝色不锈钢衣架10个装防滑无痕浸塑衣架_份',
-  '装果绿不锈钢衣架10个装防滑无痕浸塑衣架_份',
-  '北欧蓝不锈钢衣架10个装防滑无痕浸塑衣架_份',
-  '北欧粉色不锈钢衣架10个装防滑无痕浸塑衣架_份',
-  '优质订书钉标准型号办公装1000枚_盒',
-  '垃圾袋加厚45x50平口式红色_卷',
-  '垃圾袋加厚45x50平口式黑色_卷',
-  '垃圾袋加厚45x50平口式绿色_卷',
-  '垃圾袋加厚45x50平口式蓝色_卷',
-  '垃圾袋加厚45x60手提式红色_卷',
-  '垃圾袋加厚45x60手提式黄色_卷',
-  '垃圾袋加厚45x60手提式黑色_卷',
-  '垃圾袋加厚45x60手提式绿色_卷',
-  '垃圾袋加厚45x60手提式蓝色_卷',
-  '闪迪sandisk32gU盘usb3.0_个',
-  '3代南孚电池5号两粒_份',
-  '3代南孚电池7号两粒_份',
-  '合味道五香牛肉味泡面方便面_盒',
+  // '白色女款L号一次性内裤便纯棉5条_袋',
+  // '白色男款L号一次性内裤便纯棉5条_袋',
+  // '白色男款XL号一次性内裤便纯棉5条_袋',
+  // '蓝色不锈钢衣架10个装防滑无痕浸塑衣架_份',
+  // '装果绿不锈钢衣架10个装防滑无痕浸塑衣架_份',
+  // '北欧蓝不锈钢衣架10个装防滑无痕浸塑衣架_份',
+  // '北欧粉色不锈钢衣架10个装防滑无痕浸塑衣架_份',
+  // '优质订书钉标准型号办公装1000枚_盒',
+  // '垃圾袋加厚45x50平口式红色_卷',
+  // '垃圾袋加厚45x50平口式黑色_卷',
+  // '垃圾袋加厚45x50平口式绿色_卷',
+  // '垃圾袋加厚45x50平口式蓝色_卷',
+  // '垃圾袋加厚45x60手提式红色_卷',
+  // '垃圾袋加厚45x60手提式黄色_卷',
+  // '垃圾袋加厚45x60手提式黑色_卷',
+  // '垃圾袋加厚45x60手提式绿色_卷',
+  // '垃圾袋加厚45x60手提式蓝色_卷',
+  // '闪迪sandisk32gU盘usb3.0_个',
+  // '3代南孚电池5号两粒_份',
+  // '3代南孚电池7号两粒_份',
+  // '合味道五香牛肉味泡面方便面_盒',
 ];
 
 const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
@@ -83,56 +90,6 @@ const imageTypeDir = 'image';
 const videoTypeDir = 'video';
 // // output/white-bg
 const whiteBgOutputDir = 'white-bg';
-
-// 调用 API 去除背景
-// TODO 试试淘宝的抠图 , https://luban.aliyun.com/web/gen-next/entry
-// 目前不支持 api
-function callRemoveBgAPI(
-  localFilePath,
-  whiteBgFileSavePath,
-  squareFileSavePath
-) {
-  return new Promise(function (resolve, reject) {
-    const { fileName, fileSuffix } = getFileInfoByPath(localFilePath);
-    request.post(
-      {
-        url: 'https://api.remove.bg/v1.0/removebg',
-        // url: 'https://example.com/',
-        formData: {
-          image_file: fs.createReadStream(localFilePath),
-          size: 'auto',
-        },
-        headers: {
-          'X-Api-Key': process.env.API_KEY,
-        },
-        encoding: null,
-      },
-      async function (error, response, body) {
-        console.log('body: ', body);
-        // console.log('response: ', response);
-        if (error) {
-          console.error('Request failed:', error);
-          reject(error);
-        }
-        if (response.statusCode != 200) {
-          console.error('Error:', response.statusCode, body.toString('utf8'));
-          reject(error);
-        }
-
-        const newFileFullPath = `${whiteBgFileSavePath}/${fileName}-no-bg.${fileSuffix}`;
-        await fs.writeFileSync(newFileFullPath, body);
-
-        const NEW_SQUARE_FILE_NAME = `${squareFileSavePath}/${fileName}.${fileSuffix}`;
-        // 生成 1000*1000 的图片
-        await shell.exec(
-          `FILE_PATH=${newFileFullPath} NEW_SQUARE_FILE_NAME=${NEW_SQUARE_FILE_NAME} ./convert2_1_1_one_file.sh`
-        );
-
-        resolve(1);
-      }
-    );
-  });
-}
 
 // 将 ['output', 'source', 'tb', '美团饿了么'] 目录创建
 const createDirs = async () => {
@@ -177,48 +134,6 @@ const createDirs = async () => {
   }
 };
 
-const getFromBetween = {
-  results: [],
-  string: '',
-  getFromBetween: function (sub1, sub2) {
-    if (this.string.indexOf(sub1) < 0 || this.string.indexOf(sub2) < 0)
-      return false;
-    const SP = this.string.indexOf(sub1) + sub1.length;
-    const string1 = this.string.substr(0, SP);
-    const string2 = this.string.substr(SP);
-    const TP = string1.length + string2.indexOf(sub2);
-    return this.string.substring(SP, TP);
-  },
-  removeFromBetween: function (sub1, sub2) {
-    if (this.string.indexOf(sub1) < 0 || this.string.indexOf(sub2) < 0)
-      return false;
-    const removal = sub1 + this.getFromBetween(sub1, sub2) + sub2;
-    this.string = this.string.replace(removal, '');
-  },
-  getAllResults: function (sub1, sub2) {
-    // first check to see if we do have both substrings
-    if (this.string.indexOf(sub1) < 0 || this.string.indexOf(sub2) < 0) return;
-
-    // find one result
-    const result = this.getFromBetween(sub1, sub2);
-    // push it to the results array
-    this.results.push(result);
-    // remove the most recently found one from the string
-    this.removeFromBetween(sub1, sub2);
-
-    // if there's more substrings
-    if (this.string.indexOf(sub1) > -1 && this.string.indexOf(sub2) > -1) {
-      this.getAllResults(sub1, sub2);
-    } else return;
-  },
-  get: function (string, sub1, sub2) {
-    this.results = [];
-    this.string = string;
-    this.getAllResults(sub1, sub2);
-    return this.results;
-  },
-};
-
 // 1. 将本来不在对应文件夹的图片拷贝到对应目录的 source 中(E-commerce/{product}/source)，图片的名称需要带有目录名
 // 2. 将原始图拷贝到 E-commerce/origin_source 目录
 const cpOriginFilesIntoSource = async () => {
@@ -242,91 +157,7 @@ const cpOriginFilesIntoSource = async () => {
   }
 };
 
-// 根据文件路径得出文件名称，后缀
-// 注意 . 只能出现一次
-const getFileInfoByPath = (path) => {
-  const fileFullname = path.split('/').pop();
-  const splitWithDotArr = fileFullname.split('.');
-  const fileSuffix = splitWithDotArr.pop();
-  const fileName = splitWithDotArr
-    .slice(0, splitWithDotArr.length - 1)
-    .join('.');
-  return {
-    fileName,
-    fileSuffix,
-    fileFullname,
-  };
-};
-
 const ECommercialPlatforms = ['1688', 'tabobao', 'tianmao', 'jd', 'pdd'];
-// 解析文件资源名称
-/**
- *
- * @param {*} fileName
- * Format:
- *  - 来自电商: {p-1688}{t-main}{c-宠物用品}{n-不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂}end-ec0.jpg
- *  - 来自自拍: {c-宠物}{n-不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂}end-ec0.jpg
- * @return {p: 'xx', c: 'xx', n: 'xxx', realSourceName: '不锈钢铝合金猫砂铲金属铲屎神器猫铲爆款长柄猫砂-ec0.jpg'}
- */
-const parseSourceFileName = (fileName) => {
-  const imgSuffix = ['jpg', 'png', 'jpeg'];
-  const videoSuffix = ['mp4'];
-  const dataMapping = {}; // {p: 'xx', c: 'xx', n: 'xxx'}
-
-  // console.log('getFromBetween: ', getFromBetween);
-  getFromBetween.get(fileName, '{', '}').forEach((x) => {
-    dataMapping[x.split('-')[0]] = x.split('-').slice(1, 9999)[0];
-  });
-
-  const realSourceName = `${dataMapping.n}${fileName.split('}end')[1]}`;
-
-  const { fileSuffix } = getFileInfoByPath(realSourceName);
-  if (imgSuffix.includes(fileSuffix)) {
-    dataMapping.fileType = 'image';
-  } else if (videoSuffix.includes(fileSuffix)) {
-    dataMapping.fileType = 'video';
-  }
-  dataMapping.realSourceName = realSourceName;
-  dataMapping.category = dataMapping.c;
-  return dataMapping;
-};
-
-const getFileIndexMapping = (filesInSource) => {
-  const fileIndexArray = [];
-  const picIndexPattern = /\-ec\d+\./i;
-  const mainImageSource = filesInSource.filter((x) => x.includes('type-main'));
-  const desImageSource = filesInSource.filter((x) => x.includes('type-description'));
-
-  const getMp = (files) => {
-    for (let j = 0; j < files.length; j++) {
-      const fileInSource = files[j];
-
-      const fileInfo = parseSourceFileName(fileInSource);
-      //  TODO do we need video operation
-      if (fileInfo.fileType !== 'image') {
-        continue;
-      }
-      const matchedValue = fileInSource.match(picIndexPattern);
-      if (matchedValue) {
-        picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
-        const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
-        fileIndexArray.push(indexValue);
-      }
-    }
-
-    const fileIndexMapping = {};
-    const sortedArr = fileIndexArray.sort((a, b) => a - b)
-    sortedArr.forEach((x, index) => {
-      fileIndexMapping[x] = index;
-    });
-    return fileIndexMapping;
-  };
-
-  return {
-    main: getMp(mainImageSource),
-    des: getMp(desImageSource)
-  }
-};
 
 const doJob = async (isNoBgFile = false) => {
   let productsJsonData = [];
@@ -350,7 +181,6 @@ const doJob = async (isNoBgFile = false) => {
 
     // { main: { '0': 0, '2': 1 }, des: { '0': 0, '2': 1 } }
     const fileIndexMapping = getFileIndexMapping(filesInSource);
-    // console.log('fileIndexMapping: ', fileIndexMapping);
 
     for (let j = 0; j < filesInSource.length; j++) {
       const fileInSource = filesInSource[j];
@@ -368,46 +198,27 @@ const doJob = async (isNoBgFile = false) => {
       const fileInSourceFullPath = `${sourceDirFullPath}/${fileInSource}`;
       // 存在 platform, 说明是从电商平台获得的资源
       if (fileInfo.p) {
-        const imageDimmesion = (
-          await shell.exec(`identify -format '%w %h' ${fileInSourceFullPath}`)
-        ).stdout;
-
         // 主图操作
         if (fileInfo.t === 'main') {
-          const [imageWidth, imageHeight] = imageDimmesion;
-          // 主图如果不是 1:1 直接四周留白
-          if (imageWidth !== imageHeight) {
-            await shell.exec(
-              `convert ${fileInSourceFullPath} -resize 800x800 -gravity center -background white -extent 800x800 ${fileInSourceFullPath}`
-            );
-
-            const newImageDimmesion = (
-              await shell.exec(
-                `identify -format '%w %h' ${fileInSourceFullPath}`
-              )
-            ).stdout;
-            console.log(
-              '留白图片 Dimmesion is: ',
-              newImageDimmesion.split(' ')
-            );
-          }
+          await extendToSquare(fileInSourceFullPath);
         }
 
-        const fileKBSize = (
-          await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)
-        ).stdout;
-        console.log('fileKBSize: ', fileKBSize);
-        if (parseFloat(fileKBSize) < 100) {
-          console.log('图片小于 100k, 扩大之');
-          await shell.exec(`sips -Z 1000 ${fileInSourceFullPath}`);
-        }
+        await resizeFileSize(fileInSourceFullPath)
+        // const fileKBSize = (
+        //   await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)
+        // ).stdout;
+        // console.log('fileKBSize: ', fileKBSize);
+        // if (parseFloat(fileKBSize) < 100) {
+        //   console.log('图片小于 100k, 扩大之');
+        //   await shell.exec(`sips -Z 1000 ${fileInSourceFullPath}`);
+        // }
 
-        if (parseFloat(fileKBSize) > 600) {
-          console.log('图片大于 600k, 缩之');
-          await shell.exec(
-            `sips -Z 1000 ${fileInSourceFullPath} --setProperty format jpeg`
-          );
-        }
+        // if (parseFloat(fileKBSize) > 600) {
+        //   console.log('图片大于 600k, 缩之');
+        //   await shell.exec(
+        //     `sips -Z 1000 ${fileInSourceFullPath} --setProperty format jpeg`
+        //   );
+        // }
 
         // 拷贝调整后的图片放入 output 中
         // 文件名使用不带有 {} 的
@@ -419,7 +230,12 @@ const doJob = async (isNoBgFile = false) => {
           if (matchedValue) {
             picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
             const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
-            const replacedFileName = fileInfo.realSourceName.replace(picIndex, `-ec${fileIndexMapping.main[indexValue]}.`)
+            const replacedFileName = fileInfo.realSourceName.replace(
+              picIndex,
+              `-ec${fileIndexMapping.main[indexValue]}.`
+            );
+            console.log('fileInfo.realSourceName: ', fileInfo.realSourceName);
+            console.log('replacedFileName: ', replacedFileName);
             desPath = `${outPutDirFullName}/${mainOutputDir}/${imageTypeDir}/${replacedFileName}`;
           }
 
@@ -599,11 +415,8 @@ const doJob = async (isNoBgFile = false) => {
     }
   }
 
+  await storeNewJsonFileAtLocal();
   Object.keys(categoryMapping).forEach(async (key) => {
-    const dirName = Date.now().toString()
-    await shell.exec(`mkdir -p products/new_store/${dirName}`);
-    // 留档
-    await shell.exec(`mv products/new/*.json products/new_store/${dirName}`);
     const path = `products/new/${key}.json`;
     await fs.writeFileSync(
       path,
@@ -628,10 +441,12 @@ const genMeituanFormattedImage = async (tmpDir, imageType) => {
     if (matchedValue) {
       picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
       const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
-      const meituanFileName = `ZS${indexValue - 1}-${fileName.replace(
+      console.log('indexValue: ', indexValue, `ZS${indexValue - 1}`);
+      const meituanFileName = `ZS${indexValue}-${fileName.replace(
         picIndex,
         '.'
       )}`;
+      console.log('meituanFileName: ', meituanFileName);
       await shell.exec(
         `cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/美团/${imageType}/${meituanFileName}`
       );
@@ -689,41 +504,6 @@ const genEleFormattedImage = async (tmpDir, imageType) => {
       await shell.exec(
         `cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/饿了么/${imageType}/${fileName}`
       );
-    }
-  }
-};
-
-// 适用于不同规格的相同产品
-// 比如铅笔蓝色, 铅笔红色，在生存 json 文件时，应该用规格名
-// 根据 mapping 关系生成不同命名的相同图片
-const genSameImageWithDiffName = async (tmpDir) => {
-  const filesInTmp = (await shell.ls(tmpDir)).stdout
-    .split('\n')
-    .filter((x) => !!x);
-  for (let i = 0; i < newProducts.length; i++) {
-    const newProduct = newProducts[i];
-    const mappingFileNames = imageMapping[newProduct];
-    if (!mappingFileNames) continue;
-    const newProductFileNames = filesInTmp.filter((x) =>
-      x.includes(newProduct)
-    ); // [asd-ec1.png asd.jpg]
-    // console.log('newProductFileNames: ', newProductFileNames);
-
-    for (let k = 0; k < newProductFileNames.length; k++) {
-      const newProductFileName = newProductFileNames[k];
-
-      for (let j = 0; j < mappingFileNames.length; j++) {
-        const mappingFileName = mappingFileNames[j];
-        // const regex = new RegExp(newProductFileName, 'i')
-        const formattedName = newProductFileName.replace(
-          newProduct,
-          mappingFileName
-        );
-        console.log('formattedName: ', formattedName);
-        await shell.exec(
-          `cp ${tmpDir}/${newProductFileName} ${tmpDir}/${formattedName}`
-        );
-      }
     }
   }
 };
@@ -806,11 +586,11 @@ const extractAllOutputImages = async () => {
  *   - 用一个脚本合并 new_ 前缀的文件 和已有的 json 目录
  */
 const main = async () => {
-  const { isNoBgFile, isFromTB } = process.env;
+  const { isNoBgFile } = process.env;
   // 在 E-commerce 中根据产品名称创建目录
-  // await createDirs();
-  // await cpOriginFilesIntoSource();
-  // await doJob(!!isFromTB, !!isNoBgFile);
+  await createDirs();
+  await cpOriginFilesIntoSource();
+  await doJob(!!isNoBgFile);
   await extractAllOutputImages();
 };
 

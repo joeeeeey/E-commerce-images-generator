@@ -1,5 +1,6 @@
 const fs = require('fs');
 const shell = require('shelljs');
+const { storeNewJsonFileAtLocal } = require('./helpers/index')
 
 const main = async () => {
   const newProductPath = 'products/new';
@@ -29,6 +30,8 @@ const main = async () => {
       await shell.exec(`cp ${newProductPath}/${newJsonFile} ${existProduct}/${newJsonFile}`)
     }
   }
+
+  await storeNewJsonFileAtLocal()
 
   await shell.exec(`rm -rf ${newProductPath}/*.json`)
 
