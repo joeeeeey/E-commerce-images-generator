@@ -3,11 +3,18 @@ const request = require('request');
 const fs = require('fs');
 
 const storeNewJsonFileAtLocal = async () => {
-  const dirName = Date.now().toString();
-  console.log('dirName: ', dirName);
-  await shell.exec(`mkdir -p products/new_store/${dirName}`);
   // 留档
-  await shell.exec(`mv products/new/*.json products/new_store/${dirName}`);
+  // products/new/*.json 
+  const filesCount = (await shell.ls('products/new/*.json')).stdout
+    .split('\n')
+    .filter((x) => !!x).length;
+  console.log('filesCount: ', filesCount);
+  if (filesCount) {
+    const dirName = Date.now().toString();
+    console.log('dirName: ', dirName);
+    await shell.exec(`mkdir -p products/new_store/${dirName}`);
+    await shell.exec(`mv products/new/*.json products/new_store/${dirName}`);
+  }
 };
 
 const callRemoveBgAPI = (

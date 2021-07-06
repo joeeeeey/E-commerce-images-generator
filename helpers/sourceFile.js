@@ -1,5 +1,5 @@
 const { getFromBetween } = require('./string');
-
+const shell = require('shelljs');
 
 // 根据文件路径得出文件名称，后缀
 // 取最后一个 .
@@ -165,6 +165,21 @@ const resizeFileSize = async (fileInSourceFullPath) => {
   }
 }
 
+const getReorderFilePath = (fileIndexMapping, fileInfo) => {
+  const picIndexPattern = /\-ec\d+\./i;
+  const matchedValue = fileInfo.realSourceName.match(picIndexPattern);
+  if (matchedValue) {
+    picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
+    const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
+    const replacedFileName = fileInfo.realSourceName.replace(
+      picIndex,
+      `-ec${fileIndexMapping.main[indexValue]}.`
+    );
+    return replacedFileName;
+  }
+  return '';
+}
+
 module.exports = {
   resizeFileSize,
   extendToSquare,
@@ -172,4 +187,5 @@ module.exports = {
   parseSourceFileName,
   getFileIndexMapping,
   genSameImageWithDiffName,
+  getReorderFilePath,
 };

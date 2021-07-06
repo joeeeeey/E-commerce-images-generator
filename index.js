@@ -7,10 +7,12 @@ const fs = require('fs');
 const shell = require('shelljs');
 const { storeNewJsonFileAtLocal, callRemoveBgAPI } = require('./helpers/index');
 const {
+  resizeFileSize,
   parseSourceFileName,
   genSameImageWithDiffName,
   getFileIndexMapping,
   getFileInfoByPath,
+  getReorderFilePath,
 } = require('./helpers/sourceFile');
 const imageMapping = require('./products/imageMapping');
 const { getNameCodeMapping } = require('./eleme/copyImageFilesWithUuid');
@@ -41,7 +43,7 @@ const newProducts = [
   // '宠物奶瓶狗奶瓶猫奶瓶猫咪奶瓶幼犬幼猫奶瓶120ml_个',
   // '酷尔克豆腐猫砂2.3kg原味绿茶无尘除臭结团_袋',
 
-  '白色女款M号一次性内裤便纯棉5条_袋',
+  // '白色女款M号一次性内裤便纯棉5条_袋',
   // '白色女款L号一次性内裤便纯棉5条_袋',
   // '白色男款L号一次性内裤便纯棉5条_袋',
   // '白色男款XL号一次性内裤便纯棉5条_袋',
@@ -204,38 +206,15 @@ const doJob = async (isNoBgFile = false) => {
         }
 
         await resizeFileSize(fileInSourceFullPath)
-        // const fileKBSize = (
-        //   await shell.exec(`du -k ${fileInSourceFullPath} |cut -f1`)
-        // ).stdout;
-        // console.log('fileKBSize: ', fileKBSize);
-        // if (parseFloat(fileKBSize) < 100) {
-        //   console.log('图片小于 100k, 扩大之');
-        //   await shell.exec(`sips -Z 1000 ${fileInSourceFullPath}`);
-        // }
-
-        // if (parseFloat(fileKBSize) > 600) {
-        //   console.log('图片大于 600k, 缩之');
-        //   await shell.exec(
-        //     `sips -Z 1000 ${fileInSourceFullPath} --setProperty format jpeg`
-        //   );
-        // }
 
         // 拷贝调整后的图片放入 output 中
         // 文件名使用不带有 {} 的
         if (fileInfo.type === 'main') {
           let desPath = `${outPutDirFullName}/${mainOutputDir}/${imageTypeDir}/${fileInfo.realSourceName}`;
           // 重命名 source 文件
-          const picIndexPattern = /\-ec\d+\./i;
-          const matchedValue = fileInfo.realSourceName.match(picIndexPattern);
-          if (matchedValue) {
-            picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
-            const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
-            const replacedFileName = fileInfo.realSourceName.replace(
-              picIndex,
-              `-ec${fileIndexMapping.main[indexValue]}.`
-            );
-            console.log('fileInfo.realSourceName: ', fileInfo.realSourceName);
-            console.log('replacedFileName: ', replacedFileName);
+          // Reorder index file.
+          const replacedFileName = getReorderFilePath(fileIndexMapping, fileInfo)
+          if (replacedFileName) {
             desPath = `${outPutDirFullName}/${mainOutputDir}/${imageTypeDir}/${replacedFileName}`;
           }
 
@@ -265,10 +244,13 @@ const doJob = async (isNoBgFile = false) => {
         // TODO 参照之前的逻辑完成这段逻辑
       }
     }
-    // 生成 json 文件
-    // - 每次都生成名称为 products/new/${category}.json
-    // - 根据图片名称和 imageMapping 得到尽可能多的信息
 
+    /**
+     * 将图片的信息结合额外的info 文件生成一个 json 信息塞入数组，
+     * 以便于后续在 products/new 下生成 json 文件，为进货的留档
+     * - 每次都生成名称为 products/new/${category}.json
+     * - 根据图片名称和 imageMapping 得到尽可能多的信息
+     */
     // 如果有 mapping 关系就生成多个商品名称
     let newProductJsonName = [];
     const mappingFileNames = imageMapping[newProduct];
@@ -287,7 +269,7 @@ const doJob = async (isNoBgFile = false) => {
         await fs.readFileSync(`${rootFolder}/${newProduct}.json`, 'utf8')
       );
     }
-    // TODO file
+
     const jsonData = newProductJsonName.map((x) => {
       return {
         美团类别: 'TODO_家装建材_厨房卫浴_水龙头',
@@ -441,16 +423,15 @@ const genMeituanFormattedImage = async (tmpDir, imageType) => {
     if (matchedValue) {
       picIndex = matchedValue[0]; // e.g.  '-ec2.' | '-ec10.'
       const indexValue = parseInt(picIndex.match(/\d+/i)); // 以 1 开始
-      console.log('indexValue: ', indexValue, `ZS${indexValue - 1}`);
       const meituanFileName = `ZS${indexValue}-${fileName.replace(
         picIndex,
         '.'
       )}`;
-      console.log('meituanFileName: ', meituanFileName);
       await shell.exec(
         `cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/美团/${imageType}/${meituanFileName}`
       );
     } else {
+      // 这个是不带 -ec, 感觉都应该带
       await shell.exec(
         `cp ${tmpDir}/${imageType}/${fileName} ${tmpDir}/美团/${imageType}/${fileName}`
       );
@@ -548,11 +529,6 @@ const extractAllOutputImages = async () => {
   }
 
   const imgTypesDir = [mainOutputDir, descriptionOutputDir];
-  // // 压缩下图片
-  // for (let i = 0; i < imgTypesDir.length; i++) {
-  //   const dir = imgTypesDir[i];
-  //   await compressOutput(`${tmpDir}/${dir}`);
-  // }
 
   // 根据 mapping 关系生成不同命名的相同图片
   // 现在不需要这个方法了
