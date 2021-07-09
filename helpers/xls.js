@@ -74,8 +74,31 @@ const getNameCodeMapping = async (platform) => {
   return nameCodeMapping;
 };
 
+const getPlatformProductMapping = async (platform) => {
+  const nameKeyMapping = {
+    [platforms.MEITUAN]: '商品标题',
+    [platforms.ELE]: '商品名称'
+  }
+  const exportedFilePath = await findExportedXLSFilePath(platform); 
+  const allSheetData = getTemplateListData(exportedFilePath).value()
+  const firstSheetName = Object.keys(allSheetData)[0]
+  console.log('firstSheetName: ', allSheetData[firstSheetName][0]);
+  const templateListWithKey = getTemplateListData(exportedFilePath, {
+    columnToKey: allSheetData[firstSheetName][0]
+  });
+  const platformProductList = templateListWithKey.value()
+  const platformProductMapping = {}
+  platformProductList[firstSheetName].forEach(x => {
+    platformProductMapping[x[nameKeyMapping[platform]]] = x
+  })
+
+  return platformProductMapping;
+}
+
+
 module.exports = {
   getNameCodeMapping,
   getTemplateListData,
   findExportedXLSFilePath,
+  getPlatformProductMapping,
 };
