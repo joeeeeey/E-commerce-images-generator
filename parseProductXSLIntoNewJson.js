@@ -1,8 +1,14 @@
+// 解析多个平台的商品导出xls 文件，合并到 new/x.json 中
+// 适用于
+// - 老商品的 json 信息导出到这里
+// - 审核驳回到商品信息纠正
+
 // xml to json
 const excelToJson = require('convert-excel-to-json');
 const fs = require('fs');
 const shell = require('shelljs');
-const json2xls = require('json2xls');
+const { findExportedXLSFilePath, getNameCodeMapping } = require('./helpers/xls');
+// const json2xls = require('json2xls');
 
 // 辅助方法
 const pickObjByKeys = (obj, keys, ingoreNull = true) => {
@@ -66,7 +72,6 @@ const findExportedXLSInDownloads = async () => {
   return `${path}/${xlsFiles[0]}`;
 };
 
-// 获取饿了么格式化的 xls 文件
 const getTemplateListData = (filePath, options = {}) => {
   let data = null;
   const setValue = (val) => {
@@ -115,27 +120,26 @@ const appendDataAfterTempalte = async () => {
   return formattedData;
 };
 
-// console.log('getTemplateKeys: ', getTemplateKeys());
-const main = async () => {
-  const XSLFilePath = await findExportedXLSInDownloads();
-  await shell.exec(
-    `cp ${XSLFilePath.replace(/(\s+)/g, '\\$1')} ./tmp/ele_exported.xlsx`
-  );
+// const getNameCodeMapping = async () => {
+//   const XSLFilePath = await findExportedXLSFilePath('eleme');
+//   await shell.exec(
+//     `cp ${XSLFilePath.replace(/(\s+)/g, '\\$1')} ./tmp/ele_exported.xlsx`
+//   );
 
-  const res = getTemplateListData('./tmp/ele_exported.xlsx').value()[
-    '任务结果'
-  ];
+//   const res = getTemplateListData('./tmp/ele_exported.xlsx').value()[
+//     '任务结果'
+//   ];
 
-  const nameCodeMapping = {};
-  res.forEach((x) => {
-    nameCodeMapping[x['D']] = x['C'];
-  });
+//   const nameCodeMapping = {};
+//   res.forEach((x) => {
+//     nameCodeMapping[x['D']] = x['C'];
+//   });
 
-  return nameCodeMapping;
-};
+//   return nameCodeMapping;
+// };
 
-module.exports = {
-  getNameCodeMapping: main,
-};
+// module.exports = {
+//   getNameCodeMapping: getNameCodeMapping,
+// };
 
-main();
+getNameCodeMapping('eleme');
