@@ -1,5 +1,6 @@
 const { getFromBetween } = require('./string');
 const shell = require('shelljs');
+const fs = require('fs');
 
 // 根据文件路径得出文件名称，后缀
 // 取最后一个 .
@@ -180,12 +181,33 @@ const getReorderFilePath = (fileIndexMapping, fileInfo) => {
   return '';
 }
 
+const getJsonFileArrayData = async (jsonFilePath) => {
+  const jsonFiles = (await shell.exec(`ls ${jsonFilePath}`).stdout)
+  .split('\n')
+  .filter((x) => !!x)
+  .filter((x) => x.includes('json'));
+
+  const productMapping = {}
+  let arrayData = []
+  for (let i = 0; i < jsonFiles.length; i++) {
+    const jsonFile = jsonFiles[i];
+    const newJsonData = JSON.parse(await fs.readFileSync(`${jsonFilePath}/${jsonFile}`, 'utf-8'))
+    productMapping[jsonFile] = newJsonData
+    arrayData = arrayData.concat(newJsonData);
+  }
+
+  return productMapping;
+}
+
+
+
 module.exports = {
   resizeFileSize,
   extendToSquare,
   getFileInfoByPath,
   parseSourceFileName,
   getFileIndexMapping,
+  getJsonFileArrayData,
   genSameImageWithDiffName,
   getReorderFilePath,
 };

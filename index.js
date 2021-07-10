@@ -15,7 +15,7 @@ const {
   getReorderFilePath,
 } = require('./helpers/sourceFile');
 const imageMapping = require('./products/imageMapping');
-const { getNameCodeMapping } = require('./parseProductXSLIntoNewJson');
+const { getNameCodeMapping } = require('./helpers/xls');
 
 const rootFolder = `${homedir}/Downloads`;
 const productsFolder = `${rootFolder}/E-commerce`;

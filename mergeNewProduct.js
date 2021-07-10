@@ -1,3 +1,4 @@
+// 将 product/new/*.json 的文件合并到 products/*.json 中
 const fs = require('fs');
 const shell = require('shelljs');
 const { storeNewJsonFileAtLocal } = require('./helpers/index')
@@ -27,7 +28,6 @@ const findDuplicatedProduct = (data) => {
   }
   return false
 }
-
 
 const findTODOProducts = async (newJsonFiles, existJsonFiles) => {
   for (let i = 0; i < newJsonFiles.length; i++) {

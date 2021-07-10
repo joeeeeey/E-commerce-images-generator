@@ -80,18 +80,21 @@ const getPlatformProductMapping = async (platform) => {
     [platforms.ELE]: '商品名称'
   }
   const exportedFilePath = await findExportedXLSFilePath(platform); 
+  // console.log('exportedFilePath: ', exportedFilePath);
   const allSheetData = getTemplateListData(exportedFilePath).value()
   const firstSheetName = Object.keys(allSheetData)[0]
-  console.log('firstSheetName: ', allSheetData[firstSheetName][0]);
+  // console.log('firstSheetName: ', Object.keys(allSheetData), firstSheetName, allSheetData);
   const templateListWithKey = getTemplateListData(exportedFilePath, {
     columnToKey: allSheetData[firstSheetName][0]
   });
   const platformProductList = templateListWithKey.value()
   const platformProductMapping = {}
+  // console.log('platformProductList[firstSheetName]: ', platformProductList[firstSheetName].length);
   platformProductList[firstSheetName].forEach(x => {
     platformProductMapping[x[nameKeyMapping[platform]]] = x
   })
 
+  // console.log('platformProductMapping: ', Object.keys(platformProductMapping).length, JSON.stringify(Object.keys(platformProductMapping)));
   return platformProductMapping;
 }
 
