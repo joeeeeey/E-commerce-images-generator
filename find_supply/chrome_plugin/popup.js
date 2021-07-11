@@ -4,6 +4,15 @@ let goto1688MainPicListPageBtn = document.getElementById(
   'goto1688MainPicListPageBtn'
 );
 
+// TODO
+// 在美团上用 http 接口调用 api 唤醒 macos 系统
+// // 美团 detail 获得商品名称
+// document.querySelectorAll('.product-name')[0].getAttribute('value')
+
+// // 美团选择图片
+// document.querySelector('.imgs-select-label').click()
+
+
 // chrome.storage.sync.get("color", ({ color }) => {
 //   donwloadSourceBtn.style.backgroundColor = color;
 // });

@@ -13,6 +13,7 @@ const isValidPlatform = (platform) => {
 };
 
 const findExportedXLSFilePath = async (platform) => {
+  console.log('platform: ', platform);
   if (!isValidPlatform(platform)) {
     return;
   }
@@ -46,7 +47,11 @@ const getTemplateListData = (filePath, options = {}) => {
   };
 };
 
+// 根据导出的文件得到 name 与 条形码？
+// 这里只针对饿了么？？
+// TODO 支持美图
 const getNameCodeMapping = async (platform) => {
+  console.log('platform22: ', platform);
   if (!isValidPlatform(platform)) {
     return;
   }
@@ -66,9 +71,11 @@ const getNameCodeMapping = async (platform) => {
       '任务结果'
     ];
   
-    res.forEach((x) => {
-      nameCodeMapping[x['D']] = x['C'];
-    });
+    if (platform === platforms.ELE) {
+      res.forEach((x) => {
+        nameCodeMapping[x['D']] = x['C'];
+      });
+    }
   }
 
   return nameCodeMapping;

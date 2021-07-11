@@ -42,38 +42,37 @@ const newProducts = [
   '宠物奶瓶狗奶瓶猫奶瓶猫咪奶瓶幼犬幼猫奶瓶50ml_个',
   '宠物奶瓶狗奶瓶猫奶瓶猫咪奶瓶幼犬幼猫奶瓶120ml_个',
   '酷尔克豆腐猫砂2.3kg原味绿茶无尘除臭结团_袋',
-
-  // '白色女款M号一次性内裤便纯棉5条_袋',
-  // '白色女款L号一次性内裤便纯棉5条_袋',
-  // '白色男款L号一次性内裤便纯棉5条_袋',
-  // '白色男款XL号一次性内裤便纯棉5条_袋',
-  // '蓝色不锈钢衣架10个装防滑无痕浸塑衣架_份',
-  // '装果绿不锈钢衣架10个装防滑无痕浸塑衣架_份',
-  // '北欧蓝不锈钢衣架10个装防滑无痕浸塑衣架_份',
-  // '北欧粉色不锈钢衣架10个装防滑无痕浸塑衣架_份',
-  // '优质订书钉标准型号办公装1000枚_盒',
-  // '垃圾袋加厚45x50平口式红色_卷',
-  // '垃圾袋加厚45x50平口式黑色_卷',
-  // '垃圾袋加厚45x50平口式绿色_卷',
-  // '垃圾袋加厚45x50平口式蓝色_卷',
-  // '垃圾袋加厚45x60手提式红色_卷',
-  // '垃圾袋加厚45x60手提式黄色_卷',
-  // '垃圾袋加厚45x60手提式黑色_卷',
-  // '垃圾袋加厚45x60手提式绿色_卷',
-  // '垃圾袋加厚45x60手提式蓝色_卷',
-  // '闪迪sandisk32gU盘usb3.0_个',
-  // '3代南孚电池5号两粒_份',
-  // '3代南孚电池7号两粒_份',
-  // '合味道五香牛肉味泡面方便面_盒',
-  // '搬家打包袋装被子的袋子米色熊猫特大号58x48x26cm_个',
-  // '搬家打包袋装被子的袋子米色熊猫大号56x38x22cm_个',
-  // '搬家打包袋装被子的袋子粉方块中号53x33x18cm_个',
-  // '搬家打包袋装被子的袋子粉方块大号56x38x22cm_个',
-  // '搬家打包袋装被子的袋子粉方块特大号58x48x26cm_个',
-  // '乌江涪陵榨菜微辣榨菜80g_包',
-  // '乌江涪陵榨菜麻辣红油80g_包',
-  // '乌江涪陵榨菜清爽鲜脆70g_包',
-  // '乌江涪陵榨菜清淡榨菜80g_包',
+  '白色女款M号一次性内裤便纯棉5条_袋',
+  '白色女款L号一次性内裤便纯棉5条_袋',
+  '白色男款L号一次性内裤便纯棉5条_袋',
+  '白色男款XL号一次性内裤便纯棉5条_袋',
+  '蓝色不锈钢衣架10个装防滑无痕浸塑衣架_份',
+  '装果绿不锈钢衣架10个装防滑无痕浸塑衣架_份',
+  '北欧蓝不锈钢衣架10个装防滑无痕浸塑衣架_份',
+  '北欧粉色不锈钢衣架10个装防滑无痕浸塑衣架_份',
+  '优质订书钉标准型号办公装1000枚_盒',
+  '垃圾袋加厚45x50平口式红色_卷',
+  '垃圾袋加厚45x50平口式黑色_卷',
+  '垃圾袋加厚45x50平口式绿色_卷',
+  '垃圾袋加厚45x50平口式蓝色_卷',
+  '垃圾袋加厚45x60手提式红色_卷',
+  '垃圾袋加厚45x60手提式黄色_卷',
+  '垃圾袋加厚45x60手提式黑色_卷',
+  '垃圾袋加厚45x60手提式绿色_卷',
+  '垃圾袋加厚45x60手提式蓝色_卷',
+  '闪迪sandisk32gU盘usb3.0_个',
+  '3代南孚电池5号两粒_份',
+  '3代南孚电池7号两粒_份',
+  '合味道五香牛肉味泡面方便面_盒',
+  '搬家打包袋装被子的袋子米色熊猫特大号58x48x26cm_个',
+  '搬家打包袋装被子的袋子米色熊猫大号56x38x22cm_个',
+  '搬家打包袋装被子的袋子粉方块中号53x33x18cm_个',
+  '搬家打包袋装被子的袋子粉方块大号56x38x22cm_个',
+  '搬家打包袋装被子的袋子粉方块特大号58x48x26cm_个',
+  '乌江涪陵榨菜微辣榨菜80g_包',
+  '乌江涪陵榨菜麻辣红油80g_包',
+  '乌江涪陵榨菜清爽鲜脆70g_包',
+  '乌江涪陵榨菜清淡榨菜80g_包',
 ];
 
 const newProductsDir = newProducts.map((x) => `${productsFolder}/${x}`);
@@ -453,10 +452,12 @@ const genMeituanFormattedImage = async (tmpDir, imageType) => {
       `cd ${tmpDir}/美团 && zip -vr meituan_main.zip ${imageType}/ -x "*.DS_Store"`
     );
   }
+
+  // 将 description 中的文件再归类为不同文件夹
 };
 
 const genEleFormattedImage = async (tmpDir, imageType) => {
-  const nameCodeMapping = await getNameCodeMapping();
+  const nameCodeMapping = await getNameCodeMapping('eleme');
   // console.log('nameCodeMapping: ', nameCodeMapping);
   const files = (await shell.ls(`${tmpDir}/${imageType}`)).stdout
     .split('\n')
@@ -532,12 +533,12 @@ const extractAllOutputImages = async () => {
     await shell.exec(
       `cp -r ${outputDirFullPath}/${mainOutputDir}/${imageTypeDir}/* ${tmpDir}/${mainOutputDir}`
     );
-    await shell.exec(
-      `cp -r ${outputDirFullPath}/${descriptionOutputDir}/${imageTypeDir}/* ${tmpDir}/${descriptionOutputDir}`
-    );
+    // await shell.exec(
+    //   `cp -r ${outputDirFullPath}/${descriptionOutputDir}/${imageTypeDir}/* ${tmpDir}/${descriptionOutputDir}`
+    // );
   }
 
-  const imgTypesDir = [mainOutputDir, descriptionOutputDir];
+  const imgTypesDir = [mainOutputDir];
 
   // 根据 mapping 关系生成不同命名的相同图片
   // 现在不需要这个方法了
@@ -558,6 +559,22 @@ const extractAllOutputImages = async () => {
     await genMeituanFormattedImage(tmpDir, dir);
   }
 
+  // 将 description 文件按照商品名称安放
+  for (let i = 0; i < newProductsDir.length; i++) {
+    const newProductDir = newProductsDir[i];
+    const newProduct = newProducts[i];
+    const outputDirFullPath = `${newProductDir}/${outPutDir}`;
+    await shell.exec(`mkdir -p ${tmpDir}/美团/${descriptionOutputDir}/${newProduct}`);
+    await shell.exec(
+      `cp -r ${outputDirFullPath}/${descriptionOutputDir}/${imageTypeDir}/* ${tmpDir}/美团/${descriptionOutputDir}/${newProduct}`
+    );
+
+    await shell.exec(`mkdir -p ${tmpDir}/饿了么/${descriptionOutputDir}/${newProduct}`);
+    await shell.exec(
+      `cp -r ${outputDirFullPath}/${descriptionOutputDir}/${imageTypeDir}/* ${tmpDir}/饿了么/${descriptionOutputDir}/${newProduct}`
+    );
+  }
+
   await shell.exec(`open ${tmpDir}`);
 };
 
@@ -573,9 +590,9 @@ const extractAllOutputImages = async () => {
 const main = async () => {
   const { isNoBgFile } = process.env;
   // 在 E-commerce 中根据产品名称创建目录
-  await createDirs();
-  await cpOriginFilesIntoSource();
-  await doJob(!!isNoBgFile);
+  // await createDirs();
+  // await cpOriginFilesIntoSource();
+  // await doJob(!!isNoBgFile);
   await extractAllOutputImages();
 };
 
