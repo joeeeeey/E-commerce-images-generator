@@ -21,7 +21,7 @@ const findExportedXLSFilePath = async (platform) => {
 
   const xlsFiles = (await shell.exec(`ls ${path}`).stdout)
     .split('\n')
-    .filter((x) => x.includes('门店导出商品'));
+    .filter((x) => x.includes('门店导出商品') && !x.includes('$'));
   return `${path}/${xlsFiles[0]}`;
 };
 
@@ -51,7 +51,6 @@ const getTemplateListData = (filePath, options = {}) => {
 // 这里只针对饿了么？？
 // TODO 支持美图
 const getNameCodeMapping = async (platform) => {
-  console.log('platform22: ', platform);
   if (!isValidPlatform(platform)) {
     return;
   }
