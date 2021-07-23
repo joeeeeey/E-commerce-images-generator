@@ -1,5 +1,4 @@
 const fs = require('fs');
-const { SocketAddress } = require('net');
 const shell = require('shelljs');
 
 const getAllProductData = async () => {

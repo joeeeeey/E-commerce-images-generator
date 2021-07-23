@@ -23,4 +23,4 @@ merge_new_json_products:
 	node mergeNewProduct.js
 
 find_supply_by_website:
-	node find_supply/index.js
+	node findSupply/index.js
