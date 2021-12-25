@@ -6,3 +6,6 @@ yarn-error.log
 ._.DS_Store
 .history
 tmp/*
+!tmp/.keep
+products/new
+products/new_store
