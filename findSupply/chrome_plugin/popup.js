@@ -4,6 +4,28 @@ let goto1688MainPicListPageBtn = document.getElementById(
   'goto1688MainPicListPageBtn'
 );
 
+
+// url is downloadWebPImage('ci.xiaohongshu.com/c36af616-ed68-f39d-24bb-73081487e658')
+const downloadWebPImage = (url) => {
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.responseType = 'blob';
+  xhr.onload = function (e) {
+    if (this.status === 200) {
+      const blob = this.response;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = e.target.result;
+        const a = document.createElement('a');
+        a.href = data;
+        a.download = 'image.webp';
+        a.click();
+      };
+      reader.readAsDataURL(blob);
+    }
+  }
+}
+
 // TODO
 // 在美团上用 http 接口调用 api 唤醒 macos 系统
 // // 美团 detail 获得商品名称
@@ -119,6 +141,31 @@ const handleDownloadResource = () => {
     }
   }
 
+  // 小红书
+  if (window.location.origin.includes('xiaohongshu')) {
+    // 多个图片
+    const spans = document.querySelectorAll('.carousel')[0].querySelectorAll('span.inner')
+    let imgUrls = [];
+    for (let i = 0; i < spans.length; i++) {
+      // 'url("//ci.xiaohongshu.com/59564dc5-caa2-c09b-dc36-7e8bf0c64320?imageView2/2/w/1080/format/jpg")'
+      // 'ci.xiaohongshu.com/59564dc5-caa2-c09b-dc36-7e8bf0c64320'
+      console.log('spans[i].style.backgroundImage: ', spans[i].style.backgroundImage);
+      const imageUrl = spans[i].style.backgroundImage.split("//")[1].split('?')[0]
+      imgUrls.push(imageUrl)
+    }
+    console.log('imgUrls: ', imgUrls);
+
+    const itemId = window.location.href.split("item/")[1].split('?')[0]
+    imgUrls.forEach(async (url, i) => {
+      // console.log('ele.src: ', ele.src);
+      setTimeout(() => {
+        forceDownload(
+          `https://${url}?imageView2/2/w/2000/format/jpg`,
+          `xiaohongshu-${itemId}-${i}.jpg`
+        );
+      }, Math.random() * 6000);
+    });
+  }
 
   // 天猫操作，与淘宝类似
   if (window.location.origin.includes('tmall')) {
